@@ -1,0 +1,3676 @@
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   1  *modelado de algoritmos de descomposicion con GAMS
+   2  *descomposicion de benders multietapa
+   3  *24 de setiembre de 2018
+   4  *Ing. Daniel Jimenez
+   5   
+   6   
+   7  sets
+   8  t        periodos  /1*13/
+   9  r        rows  /1*17/
+  10  s        stages  /1*5/
+  11  ss(s)    subconjunto dinamico
+  12  kk(s)    subconjunto dinamico 2
+  13  ssb(s)    subconjunto dinamico
+  14  kkb(s)    subconjunto dinamico 2
+  15  mmb(s)    subconjunto dinamico 3
+  16  snt      sentido de la descomposicion            /forwardpass, backwardpass/
+  17  iter     iteraciones de benders                  /1*5/
+  18  dyniter(iter)    subconjunto dinamico iteraciones
+  19  MAPSP(s,t)   map stage y periods     /
+  20   1.1
+  21   1.2
+  22   1.3
+  23   2.4
+  24   2.5
+  25   3.6
+  26   3.7
+  27   3.8
+  28   3.9
+  29  4.10
+  30  5.11
+  31  5.12
+  32  5.13
+  33  /
+  34   
+  35  MAPSrow(s,r)  map stage y periods   /
+  36   1.1
+  37   1.2
+  38   2.3
+  39   2.4
+  40   2.5
+  41   2.6
+  42   3.7
+  43   3.8
+  44   3.9
+  45  4.10
+  46  4.11
+  47  4.12
+  48  5.13
+  49  5.14
+  50  5.15
+  51  5.16
+  52  5.17
+  53  /
+  54   
+  55  ;
+  56   
+  57  alias(t,t1,t2,t3);
+  58  alias(r,r1,r2,r3);
+  59  alias(s,s1,s2,s3,s4)
+  60  alias(iter,iter_1,iter_2);
+  61   
+  62  parameters
+  63  c(s,t)     coeficientes FO  /
+  64   1.1        184
+  65   1.2        642
+  66   1.3        312
+  67   2.4        304
+  68   2.5        472
+  69   3.6        305
+  70   3.7        531
+  71   3.8        805
+  72   3.9        516
+  73  4.10        344
+  74  5.11        740
+  75  5.12        764
+  76  5.13        386
+  77  /
+  78   
+  79  ;
+  80   
+  81   
+  82  parameters
+  83  b(s,r)     cotas restricciones   /
+  84   1.1        2105
+  85   1.2        2453
+  86   2.3        4916
+  87   2.4        2564
+  88   2.5        1969
+  89   2.6        1060
+  90   3.7        3951
+  91   3.8        1383
+  92   3.9        2783
+  93  4.10        2667
+  94  4.11        3791
+  95  4.12        1039
+  96  5.13        4756
+  97  5.14        2782
+  98  5.15        2725
+  99  5.16        3235
+ 100  5.17        3436
+ 101  /
+ 102   
+ 103  ;
+ 104   
+ 105   
+ 106  table A(s,r,s,t)     coeficientes restricciones master
+ 107             1.1       1.2       1.3       2.4       2.5       3.6       3.7       3.8       3.9      4.10      5.11      5.12      5.13
+ 108   1.1        28        38        12         0         0         0         0         0         0         0         0         0         0
+ 109   1.2        18        82        15         0         0         0         0         0         0         0         0         0         0
+ 110   2.3        -4        -2        -6        61        74         0         0         0         0         0         0         0         0
+ 111   2.4        -1        -2        -5        30        40         0         0         0         0         0         0         0         0
+ 112   2.5        -7        -4        -4        50        95         0         0         0         0         0         0         0         0
+ 113   2.6        -2        -3        -1        92        70         0         0         0         0         0         0         0         0
+ 114   3.7         0         0         0        -9        -7        88        48        26        21         0         0         0         0
+ 115   3.8         0         0         0        -8        -9        81        19        95        70         0         0         0         0
+ 116   3.9         0         0         0        -7        -7        55        26        51        24         0         0         0         0
+ 117  4.10         0         0         0         0         0        -8        -7        -6        -1        24         0         0         0
+ 118  4.11         0         0         0         0         0        -4        -4        -7        -3        32         0         0         0
+ 119  4.12         0         0         0         0         0        -9        -6        -6        -8        70         0         0         0
+ 120  5.13         0         0         0         0         0         0         0         0         0        -3        69        62        99
+ 121  5.14         0         0         0         0         0         0         0         0         0        -8        64        48        26
+ 122  5.15         0         0         0         0         0         0         0         0         0        -5        60        28        16
+ 123  5.16         0         0         0         0         0         0         0         0         0        -6        85        57        99
+ 124  5.17         0         0         0         0         0         0         0         0         0        -3        68        32        91
+ 125   
+ 126  ;
+ 127   
+ 128   
+ 129  positive variables
+ 130  x(s,t)     variables
+ 131   
+ 132  ;
+ 133   
+ 134  variables
+ 135  Z        FO
+ 136  alpha(s)    recursiva
+ 137  ;
+ 138   
+ 139  parameters
+ 140  k valor de periodo /1/
+ 141  iteracion valor de iteracion /1/
+ 142  TOL tolerancia /0.001/
+ 143  *parametro_benders parametro /0.46496/
+ 144  *parametro_benders parametro /2.1507/
+ 145  parametro_benders parametro /0.000001/
+ 146  dispb          parametro de desplazamiento
+ 147   
+ 148  x_k(s,t)           variable perido previo
+ 149  x_k_b(s,t)         variable perido previo
+ 150  x_k_m(s,t)         variable perido previo
+ 151  x_k_m_f(s,t)       variable perido previo
+ 152  Z_k(s)           fo periodo previo
+ 153  theta_k(s)       funcion recursiva
+ 154  pi_k(s,r)          marginal de ecuacion
+ 155  deltha_k(s)      factibilidad (0 0 1)
+ 156   
+ 157  x_kk(iter,s,t)     variable perido previo
+ 158  x_kk_b(iter,s,t)   variable perido previo
+ 159  x_kk_m(iter,s,t)   variable perido previo
+ 160  x_kk_m_f(iter,s,t) variable perido previo
+ 161  Z_kk(iter,s)     fo periodo previo
+ 162  Z_kk_b(iter,s)           fo periodo previo
+ 163  theta_kk(iter,s)       funcion recursiva
+ 164  alpha_kk(iter,s)       funcion recursiva
+ 165  alpha_b_kk(iter,s)       funcion recursiva
+ 166  pi_kk(iter,s,r)          marginal de ecuacion
+ 167  pi_kk_f(iter,s,r)          marginal de ecuacion
+ 168  mu_kk(iter,s)        dual del corte
+ 169  betha_kk(iter,s)     cota del corte
+ 170  deltha_kk(iter,s)        factibilidad (0 0 1)
+ 171  Z_inferior(iter)    cota inferior
+ 172  Z_inferior_1(iter)    cota inferior
+ 173  Z_inferior_2(iter)    cota inferior
+ 174  Z_inferior_3(iter)    cota inferior
+ 175  Z_superior(iter)    cota superior
+ 176  Z_inf    cota inferior
+ 177  Z_sup    cota superior
+ 178  GAP(iter) diferencias entre cotas
+ 179  ;
+ 180   
+ 181  equations
+ 182  eq_z1            funcion objetivo master primera iteracion benders
+ 183  eq_zk            funcion objetivo master j iteracion benders
+ 184  eq_zk1            funcion objetivo master j iteracion benders
+ 185  eq_r1(s,r)         ecuaciones
+ 186  eq_rk(iter,s,r)         ecuaciones
+ 187  eq_rkb(iter,s)        ecuaciones
+ 188  eq_rkf(iter,s)        ecuaciones
+ 189  ;
+ 190   
+ 191  eq_z1..  sum[(s1,t1)$[ord(s1)=1],c(s1,t1)*x(s1,t1)]   =e= Z  ;
+ 192   
+ 193  eq_zk1.. sum[(s1,t1)$[ord(s1)=k],c(s1,t1)*x(s1,t1)]   =e= Z  ;
+ 194   
+ 195  eq_zk..  sum[(s1,t1)$[ord(s1)=k],c(s1,t1)*x(s1,t1)] + sum[s1$[ord(s1)=k],alpha(s1)]  =e= Z  ;
+ 196   
+ 197  eq_r1(s2,r2)$[ord(s2)=k]..   sum[(s1,t1)$[MAPSP(s1,t1) and (ord(s1)=1)],A(s2,r2,s1,t1)*x(s1,t1)] =g= b(s2,r2);
+ 198   
+ 199  eq_rk(iter_1,s2,r2)${[ord(s2)=k] and
+ 200                       [ord(iter_1) = iteracion   ]}..    sum[(s1,t1)$[MAPSP(s1,t1) and
+ 201                                                                           (ord(s1)=k)      ],A(s2,r2,s1,t1)*x(s1,t1)]
+ 202                                                             =g=
+ 203                                                             b(s2,r2)
+ 204                                                             -sum[(s1,t1)$[MAPSP(s1,t1) and
+ 205                                                                           (ord(s1)=k-1)    ],A(s2,r2,s1,t1)*x_kk(iter_1,s1,t1)]
+ 206                                                             ;
+ 207   
+ 208  eq_rkf(iter_1,s2)$[(ord(s2)=k) and
+ 209                     (ord(iter_1)= iteracion-1 )]..    sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
+ 210                                                       =g=
+ 211                                                       sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
+ 212                                                                      (ord(s1)=k+1)   and
+ 213                                                                       MAPSP(s2,t2)   and
+ 214                                                                      (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
+ 215                                                       ;
+ 216   
+ 217  eq_rkb(iter_1,s2)$[(ord(s2)=k) and
+ 218                     (ord(iter_1)= iteracion   )]..     sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
+ 219                                                       =g=
+ 220                                                       sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
+ 221                                                                      (ord(s1)=k+1)   and
+ 222                                                                       MAPSP(s2,t2)   and
+ 223                                                                      (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
+ 224                                                       ;
+ 225   
+ 226  model multibenders1  /eq_z1, eq_r1/ ;
+ 227  model multibenders2a /eq_zk1, eq_rk/ ;
+ 228  model multibenders2  /eq_zk, eq_rk/ ;
+ 229  model multibenders3  /eq_zk, eq_r1, eq_rkf/ ;
+ 230  model multibenders4a /eq_zk, eq_rk, eq_rkf/ ;
+ 231  model multibenders4  /eq_zk, eq_rk, eq_rkb/ ;
+ 232   
+ 233   
+ 234  ss(s)=no;
+ 235  kk(s)=no;
+ 236  dyniter(iter)=no;
+ 237  Z_inferior(iter) = -inf;
+ 238  Z_superior(iter) = inf;
+ 239  Z_inf = -inf;
+ 240  Z_sup = inf;
+ 241   
+ 242   
+ 248   
+ 249  multibenders1.optfile=1 ;
+ 250  multibenders2a.optfile=1 ;
+ 251  multibenders2.optfile=1  ;
+ 252  multibenders3.optfile=1  ;
+ 253  multibenders4a.optfile=1  ;
+ 254  multibenders4.optfile=1  ;
+ 255   
+ 256  loop{iter${ABS(1-Z_inf/Z_sup) > TOL},
+ 257           iteracion=ord(iter);
+ 258           dyniter(iter)=yes;
+ 259           loop{snt,
+ 260                   if{ord(snt)=1,
+ 261                           loop {s,
+ 262                                   if{ord(iter)=1,
+ 263                                           if {ord(s)=1,
+ 264                                                  K=ord(s);
+ 265                                                  ss(s3)=yes$(ord(s3)=K);
+ 266                                                  X.LO(ss,t)  =  0 ;
+ 267                                                  X.UP(ss,t)  =  INF ;
+ 268   
+ 269                                                  solve multibenders1 using LP minimizing Z;
+ 270   
+ 271                                                   x_kk(dyniter,ss,t)=x.l(ss,t);
+ 272                                                   Z_kk(dyniter,ss)=Z.l;
+ 273                                                   pi_kk_f(dyniter,ss,r)=eq_r1.m(ss,r);
+ 274                                                   display Z_kk;
+ 275   
+ 276                                           elseif ((ord(s)>1) and (ord(s)<card(s))),
+ 277                                                   K=ord(s);
+ 278                                                   ss(s3)=yes$(ord(s3)=K);
+ 279                                                   X.LO(ss,t)  =  0 ;
+ 280                                                   X.UP(ss,t)  =  INF ;
+ 281   
+ 282                                                   solve multibenders2a using LP minimizing Z;
+ 283   
+ 284                                                   x_kk(dyniter,ss,t)=x.l(ss,t);
+ 285                                                   Z_kk(dyniter,ss)=Z.l;
+ 286                                                   pi_kk_f(dyniter,ss,r)=eq_rk.m(iter,ss,r);
+ 287                                                   display Z_kk;
+ 288                                           else
+ 289                                                   K=ord(s);
+ 290                                                   ss(s3)=yes$(ord(s3)=K);
+ 291                                                   kk(s3)=yes$(ord(s3)=K-1);
+ 292                                                   X.LO(ss,t)  =  0 ;
+ 293                                                   X.UP(ss,t)  =  INF ;
+ 294   
+ 295                                                   solve multibenders2a using LP minimizing Z;
+ 296   
+ 297                                                   if {multibenders2a.modelstat=4,
+ 298                                                           deltha_kk(dyniter,kk)=0;
+ 299                                                           theta_kk(dyniter,kk)=multibenders2a.suminfes;
+ 300   
+ 301   
+ 302                                                   else
+ 303                                                           deltha_kk(dyniter,kk)=1;
+ 304                                                           theta_kk(dyniter,kk)=Z.l;
+ 305                                                   };
+ 306   
+ 307                                                   x_kk(dyniter,ss,t)=x.l(ss,t);
+ 308                                                   Z_kk(dyniter,ss)=Z.l;
+ 309                                                   pi_kk(dyniter,ss,r)=eq_rk.m(iter,ss,r);
+ 310                                                   Z_kk_b(dyniter,ss)=Z.l;
+ 311                                                   mu_kk(dyniter,ss)=0;
+ 312                                                   betha_kk(dyniter,ss)=0;
+ 313   
+ 314                                                   display theta_kk;
+ 315                                           };
+ 316                                   else
+ 317                                          if {ord(s)=1,
+ 318                                                   K=ord(s);
+ 319                                                   ss(s3)=yes$(ord(s3)=K);
+ 320                                                   X.LO(ss,t)  =  0 ;
+ 321                                                   X.UP(ss,t)  =  INF ;
+ 322                                                   alpha.LO(ss) =  -INF ;
+ 323                                                   alpha.UP(ss) =  INF ;
+ 324   
+ 325                                                   solve multibenders3 using LP minimizing Z;
+ 326   
+ 327                                                   if{multibenders3.modelstat=3,
+ 328                                                           alpha.lo(ss)=sum[iter_2$[ord(iter_2)=iteracion-1],theta_kk(iter_2,ss)]*parametro_benders
+ 329  *                                                         alpha.lo(tt)=0
+ 330                                                           solve multibenders3 using LP minimizing Z;
+ 331                                                   };
+ 332   
+ 333                                                   x_kk(dyniter,ss,t)=x.l(ss,t);
+ 334                                                   Z_kk(dyniter,ss)=Z.l;
+ 335                                                   alpha_kk(dyniter,ss)=alpha.l(ss) ;
+ 336                                                   pi_kk_f(dyniter,ss,r)=eq_r1.m(ss,r);
+ 337   
+ 338                                                   display Z_kk;
+ 339   
+ 340                                           elseif {(ord(s)>1) and (ord(s)<card(s))},
+ 341                                                   K=ord(s);
+ 342                                                   ss(s3)=yes$(ord(s3)=K);
+ 343                                                   X.LO(ss,t)  =  0 ;
+ 344                                                   X.UP(ss,t)  =  INF ;
+ 345                                                   alpha.LO(ss) =  -INF ;
+ 346                                                   alpha.UP(ss) =  INF ;
+ 347   
+ 348                                                   solve multibenders4a using LP minimizing Z;
+ 349   
+ 350                                                   if{multibenders4a.modelstat=3,
+ 351                                                           alpha.lo(ss)=sum[iter_2$[ord(iter_2)=iteracion-1],theta_kk(iter_2,ss)]*parametro_benders;
+ 352  *                                                         alpha.lo(tt)=0
+ 353                                                           solve multibenders4a using LP minimizing Z;
+ 354                                                   };
+ 355   
+ 356                                                   x_kk(dyniter,ss,t)=x.l(ss,t);
+ 357                                                   Z_kk(dyniter,ss)=Z.l;
+ 358                                                   alpha_kk(dyniter,ss)=alpha.l(ss) ;
+ 359                                                   pi_kk_f(dyniter,ss,r)=eq_rk.m(iter,ss,r);
+ 360   
+ 361                                                   display Z_kk;
+ 362   
+ 363                                           else
+ 364                                                   K=ord(s);
+ 365                                                   ss(s3)=yes$(ord(s3)=K);
+ 366                                                   kk(s3)=yes$(ord(s3)=K-1);
+ 367                                                   X.LO(ss,t)  =  0 ;
+ 368                                                   X.UP(ss,t)  =  INF ;
+ 369                                                   alpha.LO(ss) = -INF ;
+ 370                                                   alpha.UP(ss) = INF ;
+ 371   
+ 372                                                   solve multibenders2a using LP minimizing Z;
+ 373   
+ 374                                                   if{multibenders2a.modelstat=3,
+ 375                                                           alpha.lo(ss)=sum[iter_2$[ord(iter_2)=iteracion-1],theta_kk(iter_2,ss)]*parametro_benders;
+ 376  *                                                         alpha.lo(tt)=0
+ 377                                                           solve multibenders2a using LP minimizing Z;
+ 378                                                   };
+ 379   
+ 380                                                   if {multibenders2a.modelstat=4,
+ 381                                                           deltha_kk(dyniter,kk)=0;
+ 382                                                           theta_kk(dyniter,kk)=multibenders2a.suminfes;
+ 383                                                   else
+ 384                                                           deltha_kk(dyniter,kk)=1;
+ 385                                                           theta_kk(dyniter,kk)=Z.l;
+ 386                                                   };
+ 387   
+ 388                                                   x_kk(dyniter,ss,t)=x.l(ss,t);
+ 389                                                   Z_kk(dyniter,ss)=Z.l;
+ 390                                                   pi_kk(dyniter,ss,r)=eq_rk.m(iter,ss,r);
+ 391                                                   Z_kk_b(dyniter,ss)=Z.l;
+ 392                                                   mu_kk(dyniter,ss)=eq_rkf.m(iter,ss);
+ 393                                                   betha_kk(dyniter,ss)=0;
+ 394   
+ 395                                                   display Z_kk;
+ 396                                           };
+ 397                                   };
+ 398                           };
+ 399                   else
+ 400                           loop {s$[(ord(s)>1) and (ord(s)<card(s))],
+ 401                                   K=card(s)-ord(s)+1;
+ 402                                   dispb= card(s) - 2*ord(s) + 1;
+ 403   
+ 404                                   ssb(s3)=yes$(ord(s3)=ord(s)+dispb);
+ 405                                   kkb(s3)=yes$(ord(s3)=ord(s)+dispb-1);
+ 406                                   mmb(s3)=yes$(ord(s3)=ord(s) +dispb+1);
+ 407   
+ 408   
+ 409                                   X.LO(ssb,t)  =  0 ;
+ 410                                   X.UP(ssb,t)  =  INF ;
+ 411                                   alpha.LO(ssb) = -INF ;
+ 412                                   alpha.UP(ssb) = INF ;
+ 413   
+ 414                                   solve multibenders4 using LP minimizing Z;
+ 415   
+ 416                                   if{multibenders4.modelstat=3,
+ 417                                   alpha.lo(ssb)= theta_kk(iter,ssb)*parametro_benders;
+ 418  *                                 alpha.lo(ttb)= 0;
+ 419                                   solve multibenders4 using LP minimizing Z;
+ 420                                   };
+ 421                                   if {multibenders4.modelstat=4,
+ 422                                           deltha_kk(dyniter,kkb)=0;
+ 423                                           theta_kk(dyniter,kkb)=multibenders4.suminfes;
+ 424   
+ 425                                   else
+ 426                                           deltha_kk(dyniter,kkb)=1;
+ 427                                           theta_kk(dyniter,kkb)=Z.l;
+ 428                                   };
+ 429   
+ 430                                   alpha_b_kk(dyniter,ssb)=alpha.l(ssb) ;
+ 431                                   pi_kk(dyniter,ssb,r)=eq_rk.m(iter,ssb,r);
+ 432                                   x_kk_b(dyniter,ssb,t)=x.l(ssb,t);
+ 433                                   Z_kk_b(dyniter,ssb)=Z.l;
+ 434                                   mu_kk(dyniter,ssb)=eq_rkb.m(iter,ssb);
+ 435                                   betha_kk(dyniter,ssb)=sum[(s4,r)$(ord(s4)=k+1),pi_kk(iter,s4,r)*b(s4,r)]+
+ 436                                                         sum[s4$(ord(s4)=k+1),mu_kk(iter,s4)     ]*sum[s4$(ord(s4)=k+1),betha_kk(iter,s4)];
+ 437                                   display Z_kk_b;
+ 438   
+ 439                           };
+ 440   
+ 441                   };
+ 442           };
+ 443           if {ord(iter)=1,
+ 444                   Z_inferior(iter)=sum[t,c("1",t)*x_kk(iter,"1",t)];
+ 445                   Z_inf = sum[t,c("1",t)*x_kk(iter,"1",t)];
+ 446           else
+ 447                   Z_inferior(iter)  = sum[t,c("1",t)*x_kk(iter,"1",t)] + sum[(s2,r2)$[MAPSROW(s2,r2) and (ord(s2)=2)],pi_kk(iter,s2,r2)*[b(s2,r2)-sum[(s1,t1)$[MAPSP(s1,t1) and (ord(s1)=1)],A(s2,r2,s1,t1)*x_kk(iter,s1,t1)]]]+mu_kk(iter,"2")*betha_kk(iter,"2");
+ 448                   Z_inferior_1(iter)= sum[t,c("1",t)*x_kk(iter,"1",t)] + theta_kk(iter,"1");
+ 449                   Z_inferior_2(iter)= sum[t,c("1",t)*x_kk(iter,"1",t)] + alpha_kk(iter,"1");
+ 450                   Z_inf = alpha_kk(iter,"1");
+ 451           };
+ 452           Z_superior(iter)=sum[(s,t)$MAPSP(s,t),c(s,t)*x_kk(iter,s,t)];
+ 453           Z_sup=sum[(s,t)$[(ord(s)>1) and MAPSP(s,t)],c(s,t)*x_kk(iter,s,t)];
+ 454           GAP(iter)=ABS(1-Z_inf/Z_sup)
+ 455   
+ 456           display x_kk, x_kk_b,pi_kk, pi_kk_f,deltha_kk,theta_kk, alpha_b_kk,alpha_kk, mu_kk, betha_kk, Z_kk, Z_kk_b,Z_inferior, Z_inferior_1,Z_inferior_2,Z_superior, Z_sup, Z_inf,GAP,dyniter;
+ 457           dyniter(iter)=no;
+ 458  };
+
+
+COMPILATION TIME     =        0.004 SECONDS      3 MB  42.5.0 cf11b917 LEX-LEG
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders1 Using LP From line 269
+
+
+---- eq_z1  =E=  funcion objetivo master primera iteracion benders
+
+eq_z1..  184*x(1,1) + 642*x(1,2) + 312*x(1,3) - Z =E= 0 ; (LHS = 0)
+     
+
+---- eq_r1  =G=  ecuaciones
+
+eq_r1(1,1)..  28*x(1,1) + 38*x(1,2) + 12*x(1,3) =G= 2105 ; (LHS = 0, INFES = 2105 ****)
+     
+eq_r1(1,2)..  18*x(1,1) + 82*x(1,2) + 15*x(1,3) =G= 2453 ; (LHS = 0, INFES = 2453 ****)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders1 Using LP From line 269
+
+
+---- x  variables
+
+x(1,1)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+      184       eq_z1
+       28       eq_r1(1,1)
+       18       eq_r1(1,2)
+
+x(1,2)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+      642       eq_z1
+       38       eq_r1(1,1)
+       82       eq_r1(1,2)
+
+x(1,3)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+      312       eq_z1
+       12       eq_r1(1,1)
+       15       eq_r1(1,2)
+
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+       -1       eq_z1
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders1 Using LP From line 269
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 2.105E+03, 2.453E+03] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 6.420E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders1 Using LP From line 269
+
+
+LOOPS                                 iter   1
+                                       snt   forwardpass
+                                         s   1
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           2     SINGLE EQUATIONS            3
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            4
+NON ZERO ELEMENTS            10
+
+
+GENERATION TIME      =        0.003 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 1
+                                        snt forwardpass
+                                          s 1
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 6
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders1 Using LP From line 269
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders1       OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  269
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE            21326.6824
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:        21326.682382
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_z1               .              .              .            -1.0000      
+
+  eq_z1  funcion objetivo master primera iteracion benders
+
+---- EQU eq_r1  ecuaciones
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.1      2105.0000      2105.0000        +INF            2.1911      
+1.2      2453.0000      2453.0000        +INF            6.8139      
+
+---- VAR x  variables
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.1          .            49.2531        +INF             .          
+1.2          .            19.1030        +INF             .          
+1.3          .              .            +INF          183.4988      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF        21326.6824        +INF             .          
+
+  Z  FO
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 7
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    274 PARAMETER Z_kk  fo periodo previo
+
+            1
+
+1   21326.682
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 8
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders2a Using LP From line 282
+
+
+---- eq_zk1  =E=  funcion objetivo master j iteracion benders
+
+eq_zk1..  304*x(2,4) + 472*x(2,5) - Z =E= 0 ; (LHS = -21326.682382134, INFES = 21326.682382134 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(1,2,3)..  61*x(2,4) + 74*x(2,5) =G= 5151.21836228288 ; (LHS = 0, INFES = 5151.21836228288 ****)
+     
+eq_rk(1,2,4)..  30*x(2,4) + 40*x(2,5) =G= 2651.45905707196 ; (LHS = 0, INFES = 2651.45905707196 ****)
+     
+eq_rk(1,2,5)..  50*x(2,4) + 95*x(2,5) =G= 2390.18362282878 ; (LHS = 0, INFES = 2390.18362282878 ****)
+     
+REMAINING ENTRY SKIPPED
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 9
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders2a Using LP From line 282
+
+
+---- x  variables
+
+x(2,4)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+      304       eq_zk1
+       61       eq_rk(1,2,3)
+       30       eq_rk(1,2,4)
+       50       eq_rk(1,2,5)
+       92       eq_rk(1,2,6)
+
+x(2,5)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+      472       eq_zk1
+       74       eq_rk(1,2,3)
+       40       eq_rk(1,2,4)
+       95       eq_rk(1,2,5)
+       70       eq_rk(1,2,6)
+
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 21326.682382134, +INF, 0)
+       -1       eq_zk1
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 10
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders2a Using LP From line 282
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 1.216E+03, 5.151E+03] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 4.720E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 11
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders2a Using LP From line 282
+
+
+LOOPS                                 iter   1
+                                       snt   forwardpass
+                                         s   2
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           2     SINGLE EQUATIONS            5
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS            11
+
+
+GENERATION TIME      =        0.003 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 1
+                                        snt forwardpass
+                                          s 2
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 12
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders2a Using LP From line 282
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders2a      OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  282
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE            26868.1184
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         3    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:        26868.118445
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk1              .              .              .            -1.0000      
+
+  eq_zk1  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+1.2.3      5151.2184      5391.3001        +INF             .          
+1.2.4      2651.4591      2651.4591        +INF           10.1333      
+1.2.5      2390.1836      4419.0984        +INF             .          
+1.2.6      1215.8151      8131.1411        +INF             .          
+
+---- VAR x  variables
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+2.4          .            88.3820        +INF             .          
+2.5          .              .            +INF           66.6667      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF        26868.1184        +INF             .          
+
+  Z  FO
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 13
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    287 PARAMETER Z_kk  fo periodo previo
+
+            1           2
+
+1   21326.682   26868.118
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 14
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders2a Using LP From line 282
+
+
+---- eq_zk1  =E=  funcion objetivo master j iteracion benders
+
+eq_zk1..  305*x(3,6) + 531*x(3,7) + 805*x(3,8) + 516*x(3,9) - Z =E= 0 ; (LHS = -26868.1184449959, INFES = 26868.1184449959 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(1,3,7)..  88*x(3,6) + 48*x(3,7) + 26*x(3,8) + 21*x(3,9) =G= 4746.43771712159 ; (LHS = 0, INFES = 4746.43771712159 ****)
+     
+eq_rk(1,3,8)..  81*x(3,6) + 19*x(3,7) + 95*x(3,8) + 70*x(3,9) =G= 2090.05574855252 ; (LHS = 0, INFES = 2090.05574855252 ****)
+     
+eq_rk(1,3,9)..  55*x(3,6) + 26*x(3,7) + 51*x(3,8) + 24*x(3,9) =G= 3401.67377998346 ; (LHS = 0, INFES = 3401.67377998346 ****)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 15
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders2a Using LP From line 282
+
+
+---- x  variables
+
+x(3,6)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+      305       eq_zk1
+       88       eq_rk(1,3,7)
+       81       eq_rk(1,3,8)
+       55       eq_rk(1,3,9)
+
+x(3,7)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+      531       eq_zk1
+       48       eq_rk(1,3,7)
+       19       eq_rk(1,3,8)
+       26       eq_rk(1,3,9)
+
+x(3,8)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+      805       eq_zk1
+       26       eq_rk(1,3,7)
+       95       eq_rk(1,3,8)
+       51       eq_rk(1,3,9)
+
+REMAINING ENTRY SKIPPED
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 26868.1184449959, +INF, 0)
+       -1       eq_zk1
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 16
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders2a Using LP From line 282
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 2.090E+03, 4.746E+03] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 8.050E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 17
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders2a Using LP From line 282
+
+
+LOOPS                                 iter   1
+                                       snt   forwardpass
+                                         s   3
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           2     SINGLE EQUATIONS            4
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            5
+NON ZERO ELEMENTS            17
+
+
+GENERATION TIME      =        0.003 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 1
+                                        snt forwardpass
+                                          s 3
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 18
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders2a Using LP From line 282
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders2a      OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  282
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE            18863.8273
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:        18863.827325
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk1              .              .              .            -1.0000      
+
+  eq_zk1  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+1.3.7      4746.4377      5442.6780        +INF             .          
+1.3.8      2090.0557      5009.7377        +INF             .          
+1.3.9      3401.6738      3401.6738        +INF            5.5455      
+
+---- VAR x  variables
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+3.6          .            61.8486        +INF             .          
+3.7          .              .            +INF          386.8182      
+3.8          .              .            +INF          522.1818      
+3.9          .              .            +INF          382.9091      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF        18863.8273        +INF             .          
+
+  Z  FO
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 19
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    287 PARAMETER Z_kk  fo periodo previo
+
+            1           2           3
+
+1   21326.682   26868.118   18863.827
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 20
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders2a Using LP From line 282
+
+
+---- eq_zk1  =E=  funcion objetivo master j iteracion benders
+
+eq_zk1..  344*x(4,10) - Z =E= 0 ; (LHS = -18863.8273253628, INFES = 18863.8273253628 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(1,4,10)..  24*x(4,10) =G= 3161.78891345214 ; (LHS = 0, INFES = 3161.78891345214 ****)
+     
+eq_rk(1,4,11)..  32*x(4,10) =G= 4038.39445672607 ; (LHS = 0, INFES = 4038.39445672607 ****)
+     
+eq_rk(1,4,12)..  70*x(4,10) =G= 1595.63752763366 ; (LHS = 0, INFES = 1595.63752763366 ****)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 21
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders2a Using LP From line 282
+
+
+---- x  variables
+
+x(4,10)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+      344       eq_zk1
+       24       eq_rk(1,4,10)
+       32       eq_rk(1,4,11)
+       70       eq_rk(1,4,12)
+
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 18863.8273253628, +INF, 0)
+       -1       eq_zk1
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 22
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders2a Using LP From line 282
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 1.596E+03, 4.038E+03] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 3.440E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 23
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders2a Using LP From line 282
+
+
+LOOPS                                 iter   1
+                                       snt   forwardpass
+                                         s   4
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           2     SINGLE EQUATIONS            4
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             5
+
+
+GENERATION TIME      =        0.002 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 1
+                                        snt forwardpass
+                                          s 4
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 24
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders2a Using LP From line 282
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders2a      OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  282
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE            45318.9744
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:        45318.974426
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk1              .              .              .            -1.0000      
+
+  eq_zk1  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+              LOWER          LEVEL          UPPER         MARGINAL
+
+1.4.10      3161.7889      3161.7889        +INF           14.3333      
+1.4.11      4038.3945      4215.7186        +INF             .          
+1.4.12      1595.6375      9221.8843        +INF             .          
+
+---- VAR x  variables
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+4.10          .           131.7412        +INF             .          
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF        45318.9744        +INF             .          
+
+  Z  FO
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 25
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    287 PARAMETER Z_kk  fo periodo previo
+
+            1           2           3           4
+
+1   21326.682   26868.118   18863.827   45318.974
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 26
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders2a Using LP From line 295
+
+
+---- eq_zk1  =E=  funcion objetivo master j iteracion benders
+
+eq_zk1..  740*x(5,11) + 764*x(5,12) + 386*x(5,13) - Z =E= 0 ; (LHS = -45318.9744261473, INFES = 45318.9744261473 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(1,5,13)..  69*x(5,11) + 62*x(5,12) + 99*x(5,13) =G= 5151.22361418152 ; (LHS = 0, INFES = 5151.22361418152 ****)
+     
+eq_rk(1,5,14)..  64*x(5,11) + 48*x(5,12) + 26*x(5,13) =G= 3835.92963781738 ; (LHS = 0, INFES = 3835.92963781738 ****)
+     
+eq_rk(1,5,15)..  60*x(5,11) + 28*x(5,12) + 16*x(5,13) =G= 3383.70602363586 ; (LHS = 0, INFES = 3383.70602363586 ****)
+     
+REMAINING 2 ENTRIES SKIPPED
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 27
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders2a Using LP From line 295
+
+
+---- x  variables
+
+x(5,11)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+      740       eq_zk1
+       69       eq_rk(1,5,13)
+       64       eq_rk(1,5,14)
+       60       eq_rk(1,5,15)
+       85       eq_rk(1,5,16)
+       68       eq_rk(1,5,17)
+
+x(5,12)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+      764       eq_zk1
+       62       eq_rk(1,5,13)
+       48       eq_rk(1,5,14)
+       28       eq_rk(1,5,15)
+       57       eq_rk(1,5,16)
+       32       eq_rk(1,5,17)
+
+x(5,13)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+      386       eq_zk1
+       99       eq_rk(1,5,13)
+       26       eq_rk(1,5,14)
+       16       eq_rk(1,5,15)
+       99       eq_rk(1,5,16)
+       91       eq_rk(1,5,17)
+
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 45318.9744261473, +INF, 0)
+       -1       eq_zk1
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 28
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders2a Using LP From line 295
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 3.384E+03, 5.151E+03] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 7.640E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 29
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders2a Using LP From line 295
+
+
+LOOPS                                 iter   1
+                                       snt   forwardpass
+                                         s   5
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           2     SINGLE EQUATIONS            6
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            4
+NON ZERO ELEMENTS            19
+
+
+GENERATION TIME      =        0.002 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 1
+                                        snt forwardpass
+                                          s 5
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 30
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders2a Using LP From line 295
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders2a      OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  295
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE            45574.7118
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:        45574.711828
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk1              .              .              .            -1.0000      
+
+  eq_zk1  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+              LOWER          LEVEL          UPPER         MARGINAL
+
+1.5.13      5151.2236      5151.2236        +INF            1.2030      
+1.5.14      3835.9296      3835.9296        +INF           10.2655      
+1.5.15      3383.7060      3476.3320        +INF             .          
+1.5.16      4025.4472      6017.1865        +INF             .          
+1.5.17      3831.2236      4982.6154        +INF             .          
+
+---- VAR x  variables
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+5.11          .            54.1227        +INF             .          
+5.12          .              .            +INF          196.6693      
+5.13          .            14.3107        +INF             .          
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF        45574.7118        +INF             .          
+
+  Z  FO
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 31
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    314 PARAMETER theta_kk  funcion recursiva
+
+            4
+
+1   45574.712
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 32
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders4 Using LP From line 414
+
+
+---- eq_zk  =E=  funcion objetivo master j iteracion benders
+
+eq_zk..  344*x(4,10) - Z + alpha(4) =E= 0 ; (LHS = -255.737401409024, INFES = 255.737401409024 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(1,4,10)..  24*x(4,10) =G= 3161.78891345214 ; (LHS = 3161.78891345214)
+     
+eq_rk(1,4,11)..  32*x(4,10) =G= 4038.39445672607 ; (LHS = 4215.71855126952)
+     
+eq_rk(1,4,12)..  70*x(4,10) =G= 1595.63752763366 ; (LHS = 9221.88433090207)
+     
+
+---- eq_rkb  =G=  ecuaciones
+
+eq_rkb(1,4)..  - 85.7331571994716*x(4,10) + alpha(4) =G= 34280.1224130339 ; (LHS = -11294.5894145225, INFES = 45574.7118275563 ****)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 33
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders4 Using LP From line 414
+
+
+---- x  variables
+
+x(4,10)
+                (.LO, .L, .UP, .M = 0, 131.741204727172, +INF, 0)
+      344       eq_zk
+       24       eq_rk(1,4,10)
+       32       eq_rk(1,4,11)
+       70       eq_rk(1,4,12)
+      -85.7332  eq_rkb(1,4)
+
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 45574.7118275563, +INF, 0)
+       -1       eq_zk
+
+
+---- alpha  recursiva
+
+alpha(4)
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       eq_zk
+        1       eq_rkb(1,4)
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 34
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders4 Using LP From line 414
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 1.596E+03, 3.428E+04] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 3.440E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 35
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders4 Using LP From line 414
+
+
+LOOPS                                 iter   1
+                                       snt   backwardpass
+                                         s   2
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           3     SINGLE EQUATIONS            5
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             8
+
+
+GENERATION TIME      =        0.003 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 1
+                                        snt backwardpass
+                                          s 2
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 36
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders4 Using LP From line 414
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders4       OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  414
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE            90893.6863
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:        90893.686254
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk               .              .              .            -1.0000      
+
+  eq_zk  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+              LOWER          LEVEL          UPPER         MARGINAL
+
+1.4.10      3161.7889      3161.7889        +INF           17.9055      
+1.4.11      4038.3945      4215.7186        +INF             .          
+1.4.12      1595.6375      9221.8843        +INF             .          
+
+---- EQU eq_rkb  ecuaciones
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.4     34280.1224     34280.1224        +INF            1.0000      
+
+---- VAR x  variables
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+4.10          .           131.7412        +INF             .          
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF        90893.6863        +INF             .          
+
+  Z  FO
+
+---- VAR alpha  recursiva
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+4        -INF        45574.7118        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 37
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    437 PARAMETER Z_kk_b  fo periodo previo
+
+            4           5
+
+1   90893.686   45574.712
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 38
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders4 Using LP From line 414
+
+
+---- eq_zk  =E=  funcion objetivo master j iteracion benders
+
+eq_zk..  305*x(3,6) + 531*x(3,7) + 805*x(3,8) + 516*x(3,9) - Z + alpha(3) =E= 0 ; (LHS = -72029.8589283409, INFES = 72029.8589283409 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(1,3,7)..  88*x(3,6) + 48*x(3,7) + 26*x(3,8) + 21*x(3,9) =G= 4746.43771712159 ; (LHS = 5442.67804797353)
+     
+eq_rk(1,3,8)..  81*x(3,6) + 19*x(3,7) + 95*x(3,8) + 70*x(3,9) =G= 2090.05574855252 ; (LHS = 5009.73774870291)
+     
+eq_rk(1,3,9)..  55*x(3,6) + 26*x(3,7) + 51*x(3,8) + 24*x(3,9) =G= 3401.67377998346 ; (LHS = 3401.67377998346)
+     
+
+---- eq_rkb  =G=  ecuaciones
+
+eq_rkb(1,3)..  - 143.244385733157*x(3,6) - 125.338837516513*x(3,7) - 107.433289299868*x(3,8) - 17.9055482166447*x(3,9) + alpha(3) =G= 82034.2195068252 ; (LHS = -8859.46674687849, INFES = 90893.6862537037 ****)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 39
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders4 Using LP From line 414
+
+
+---- x  variables
+
+x(3,6)
+                (.LO, .L, .UP, .M = 0, 61.8486141815174, +INF, 0)
+      305       eq_zk
+       88       eq_rk(1,3,7)
+       81       eq_rk(1,3,8)
+       55       eq_rk(1,3,9)
+     -143.2444  eq_rkb(1,3)
+
+x(3,7)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 386.818181818182)
+      531       eq_zk
+       48       eq_rk(1,3,7)
+       19       eq_rk(1,3,8)
+       26       eq_rk(1,3,9)
+     -125.3388  eq_rkb(1,3)
+
+x(3,8)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 522.181818181818)
+      805       eq_zk
+       26       eq_rk(1,3,7)
+       95       eq_rk(1,3,8)
+       51       eq_rk(1,3,9)
+     -107.4333  eq_rkb(1,3)
+
+REMAINING ENTRY SKIPPED
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 90893.6862537037, +INF, 0)
+       -1       eq_zk
+
+
+---- alpha  recursiva
+
+alpha(3)
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       eq_zk
+        1       eq_rkb(1,3)
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 40
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders4 Using LP From line 414
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 2.090E+03, 8.203E+04] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 8.050E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 41
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders4 Using LP From line 414
+
+
+LOOPS                                 iter   1
+                                       snt   backwardpass
+                                         s   3
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           3     SINGLE EQUATIONS            5
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES            6
+NON ZERO ELEMENTS            23
+
+
+GENERATION TIME      =        0.003 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 1
+                                        snt backwardpass
+                                          s 3
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 42
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders4 Using LP From line 414
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders4       OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  414
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE           109757.5136
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:       109757.513579
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk               .              .              .            -1.0000      
+
+  eq_zk  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+1.3.7      4746.4377      5442.6780        +INF             .          
+1.3.8      2090.0557      5009.7377        +INF             .          
+1.3.9      3401.6738      3401.6738        +INF            8.1499      
+
+---- EQU eq_rkb  ecuaciones
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.3     82034.2195     82034.2195        +INF            1.0000      
+
+---- VAR x  variables
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+3.6          .            61.8486        +INF             .          
+3.7          .              .            +INF          444.4415      
+3.8          .              .            +INF          496.7885      
+3.9          .              .            +INF          338.3080      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF       109757.5136        +INF             .          
+
+  Z  FO
+
+---- VAR alpha  recursiva
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+3        -INF        90893.6863        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 43
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    437 PARAMETER Z_kk_b  fo periodo previo
+
+            3           4           5
+
+1  109757.514   90893.686   45574.712
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 44
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders4 Using LP From line 414
+
+
+---- eq_zk  =E=  funcion objetivo master j iteracion benders
+
+eq_zk..  304*x(2,4) + 472*x(2,5) - Z + alpha(2) =E= 0 ; (LHS = -82889.3951340706, INFES = 82889.3951340706 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(1,2,3)..  61*x(2,4) + 74*x(2,5) =G= 5151.21836228288 ; (LHS = 5391.30008271299)
+     
+eq_rk(1,2,4)..  30*x(2,4) + 40*x(2,5) =G= 2651.45905707196 ; (LHS = 2651.45905707196)
+     
+eq_rk(1,2,5)..  50*x(2,4) + 95*x(2,5) =G= 2390.18362282878 ; (LHS = 4419.09842845327)
+     
+REMAINING ENTRY SKIPPED
+
+
+---- eq_rkb  =G=  ecuaciones
+
+eq_rkb(1,2)..  - 57.0492854569473*x(2,4) - 57.0492854569473*x(2,5) + alpha(2) =G= 104715.385424923 ; (LHS = -5042.12815414355, INFES = 109757.513579066 ****)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 45
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders4 Using LP From line 414
+
+
+---- x  variables
+
+x(2,4)
+                (.LO, .L, .UP, .M = 0, 88.3819685690653, +INF, 0)
+      304       eq_zk
+       61       eq_rk(1,2,3)
+       30       eq_rk(1,2,4)
+       50       eq_rk(1,2,5)
+       92       eq_rk(1,2,6)
+      -57.0493  eq_rkb(1,2)
+
+x(2,5)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 66.6666666666667)
+      472       eq_zk
+       74       eq_rk(1,2,3)
+       40       eq_rk(1,2,4)
+       95       eq_rk(1,2,5)
+       70       eq_rk(1,2,6)
+      -57.0493  eq_rkb(1,2)
+
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 109757.513579066, +INF, 0)
+       -1       eq_zk
+
+
+---- alpha  recursiva
+
+alpha(2)
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       eq_zk
+        1       eq_rkb(1,2)
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 46
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders4 Using LP From line 414
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 1.216E+03, 1.047E+05] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 4.720E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 47
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders4 Using LP From line 414
+
+
+LOOPS                                 iter   1
+                                       snt   backwardpass
+                                         s   4
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           3     SINGLE EQUATIONS            6
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES            4
+NON ZERO ELEMENTS            15
+
+
+GENERATION TIME      =        0.002 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 1
+                                        snt backwardpass
+                                          s 4
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 48
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders4 Using LP From line 414
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders4       OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  414
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE           136625.6320
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:       136625.632024
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk               .              .              .            -1.0000      
+
+  eq_zk  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+1.2.3      5151.2184      5391.3001        +INF             .          
+1.2.4      2651.4591      2651.4591        +INF           12.0350      
+1.2.5      2390.1836      4419.0984        +INF             .          
+1.2.6      1215.8151      8131.1411        +INF             .          
+
+---- EQU eq_rkb  ecuaciones
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.2    104715.3854    104715.3854        +INF            1.0000      
+
+---- VAR x  variables
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+2.4          .            88.3820        +INF             .          
+2.5          .              .            +INF           47.6502      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF       136625.6320        +INF             .          
+
+  Z  FO
+
+---- VAR alpha  recursiva
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+2        -INF       109757.5136        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 49
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    437 PARAMETER Z_kk_b  fo periodo previo
+
+            2           3           4           5
+
+1  136625.632  109757.514   90893.686   45574.712
+
+
+----    456 PARAMETER x_kk  variable perido previo
+
+              1           2           4           6          10          11          13
+
+1.1      49.253      19.103
+1.2                              88.382
+1.3                                          61.849
+1.4                                                     131.741
+1.5                                                                  54.123      14.311
+
+
+----    456 PARAMETER x_kk_b  variable perido previo
+
+              4           6          10
+
+1.2      88.382
+1.3                  61.849
+1.4                             131.741
+
+
+----    456 PARAMETER pi_kk  marginal de ecuacion
+
+              4           9          10          13          14
+
+1.2      12.035
+1.3                   8.150
+1.4                              17.906
+1.5                                           1.203      10.266
+
+
+----    456 PARAMETER pi_kk_f  marginal de ecuacion
+
+              1           2           4           9          10
+
+1.1       2.191       6.814
+1.2                              10.133
+1.3                                           5.545
+1.4                                                      14.333
+
+
+----    456 PARAMETER deltha_kk  factibilidad (0 0 1)
+
+            1           2           3           4
+
+1       1.000       1.000       1.000       1.000
+
+
+----    456 PARAMETER theta_kk  funcion recursiva
+
+            1           2           3           4
+
+1  136625.632  109757.514   90893.686   45574.712
+
+
+----    456 PARAMETER alpha_b_kk  funcion recursiva
+
+            2           3           4
+
+1  109757.514   90893.686   45574.712
+
+
+----    456 PARAMETER alpha_kk  funcion recursiva
+
+                      ( ALL       0.000 )
+
+
+----    456 PARAMETER mu_kk  dual del corte
+
+            2           3           4
+
+1       1.000       1.000       1.000
+
+
+----    456 PARAMETER betha_kk  cota del corte
+
+            2           3           4
+
+1  104715.385   82034.220   34280.122
+
+
+----    456 PARAMETER Z_kk  fo periodo previo
+
+            1           2           3           4           5
+
+1   21326.682   26868.118   18863.827   45318.974   45574.712
+
+
+----    456 PARAMETER Z_kk_b  fo periodo previo
+
+            2           3           4           5
+
+1  136625.632  109757.514   90893.686   45574.712
+
+
+----    456 PARAMETER Z_inferior  cota inferior
+
+1 21326.682,    2      -INF,    3      -INF,    4      -INF,    5      -INF
+
+
+----    456 PARAMETER Z_inferior_1  cota inferior
+
+                      ( ALL       0.000 )
+
+
+----    456 PARAMETER Z_inferior_2  cota inferior
+
+                      ( ALL       0.000 )
+
+
+----    456 PARAMETER Z_superior  cota superior
+
+1 157952.314,    2       +INF,    3       +INF,    4       +INF,    5       +INF
+
+
+----    456 PARAMETER Z_sup                =   136625.632  cota superior
+            PARAMETER Z_inf                =    21326.682  cota inferior
+
+----    456 PARAMETER GAP  diferencias entre cotas
+
+1 0.844
+
+
+----    456 SET dyniter  subconjunto dinamico iteraciones
+
+1
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 50
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders3 Using LP From line 325
+
+
+---- eq_zk  =E=  funcion objetivo master j iteracion benders
+
+eq_zk..  184*x(1,1) + 642*x(1,2) + 312*x(1,3) - Z + alpha(1) =E= 0 ; (LHS = -115298.949641928, INFES = 115298.949641928 ****)
+     
+
+---- eq_r1  =G=  ecuaciones
+
+eq_r1(1,1)..  28*x(1,1) + 38*x(1,2) + 12*x(1,3) =G= 2105 ; (LHS = 2105)
+     
+eq_r1(1,2)..  18*x(1,1) + 82*x(1,2) + 15*x(1,3) =G= 2453 ; (LHS = 2453)
+     
+
+---- eq_rkf  =G=  ecuaciones
+
+eq_rkf(1,1)..  - 12.0349761818982*x(1,1) - 24.0699523637965*x(1,2) - 60.1748809094912*x(1,3) + alpha(1) =G= 135573.06435531 ; (LHS = -1052.56766875231, INFES = 136625.632024062 ****)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 51
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders3 Using LP From line 325
+
+
+---- x  variables
+
+x(1,1)
+                (.LO, .L, .UP, .M = 0, 49.2531017369727, +INF, 0)
+      184       eq_zk
+       28       eq_r1(1,1)
+       18       eq_r1(1,2)
+      -12.035   eq_rkf(1,1)
+
+x(1,2)
+                (.LO, .L, .UP, .M = 0, 19.1029776674938, +INF, 0)
+      642       eq_zk
+       38       eq_r1(1,1)
+       82       eq_r1(1,2)
+      -24.07    eq_rkf(1,1)
+
+x(1,3)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 183.498759305211)
+      312       eq_zk
+       12       eq_r1(1,1)
+       15       eq_r1(1,2)
+      -60.1749  eq_rkf(1,1)
+
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 136625.632024062, +INF, 0)
+       -1       eq_zk
+
+
+---- alpha  recursiva
+
+alpha(1)
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       eq_zk
+        1       eq_rkf(1,1)
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 52
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders3 Using LP From line 325
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 2.105E+03, 1.356E+05] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 6.420E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 53
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders3 Using LP From line 325
+
+
+LOOPS                                 iter   2
+                                       snt   forwardpass
+                                         s   1
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           3     SINGLE EQUATIONS            4
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES            5
+NON ZERO ELEMENTS            15
+
+
+GENERATION TIME      =        0.004 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 2
+                                        snt forwardpass
+                                          s 1
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 54
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders3 Using LP From line 325
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders3       OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  325
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE           157952.3144
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:       157952.314406
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk               .              .              .            -1.0000      
+
+  eq_zk  funcion objetivo master j iteracion benders
+
+---- EQU eq_r1  ecuaciones
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.1      2105.0000      2105.0000        +INF            2.5345      
+1.2      2453.0000      2453.0000        +INF            6.9483      
+
+---- EQU eq_rkf  ecuaciones
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.1    135573.0644    135573.0644        +INF            1.0000      
+
+---- VAR x  variables
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.1          .            49.2531        +INF             .          
+1.2          .            19.1030        +INF             .          
+1.3          .              .            +INF          237.5367      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF       157952.3144        +INF             .          
+
+  Z  FO
+
+---- VAR alpha  recursiva
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+1        -INF       136625.6320        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 55
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    338 PARAMETER Z_kk  fo periodo previo
+
+            1           2           3           4           5
+
+1   21326.682   26868.118   18863.827   45318.974   45574.712
+2  157952.314
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 56
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders4a Using LP From line 348
+
+
+---- eq_zk  =E=  funcion objetivo master j iteracion benders
+
+eq_zk..  304*x(2,4) + 472*x(2,5) - Z + alpha(2) =E= 0 ; (LHS = -21326.682382134, INFES = 21326.682382134 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(2,2,3)..  61*x(2,4) + 74*x(2,5) =G= 5151.21836228288 ; (LHS = 5391.30008271299)
+     
+eq_rk(2,2,4)..  30*x(2,4) + 40*x(2,5) =G= 2651.45905707196 ; (LHS = 2651.45905707196)
+     
+eq_rk(2,2,5)..  50*x(2,4) + 95*x(2,5) =G= 2390.18362282878 ; (LHS = 4419.09842845327)
+     
+REMAINING ENTRY SKIPPED
+
+
+---- eq_rkf  =G=  ecuaciones
+
+eq_rkf(1,2)..  - 57.0492854569473*x(2,4) - 57.0492854569473*x(2,5) + alpha(2) =G= 104715.385424923 ; (LHS = 104715.385424923)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 57
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders4a Using LP From line 348
+
+
+---- x  variables
+
+x(2,4)
+                (.LO, .L, .UP, .M = 0, 88.3819685690653, +INF, 0)
+      304       eq_zk
+       61       eq_rk(2,2,3)
+       30       eq_rk(2,2,4)
+       50       eq_rk(2,2,5)
+       92       eq_rk(2,2,6)
+      -57.0493  eq_rkf(1,2)
+
+x(2,5)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 47.6502381810176)
+      472       eq_zk
+       74       eq_rk(2,2,3)
+       40       eq_rk(2,2,4)
+       95       eq_rk(2,2,5)
+       70       eq_rk(2,2,6)
+      -57.0493  eq_rkf(1,2)
+
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 157952.314406196, +INF, 0)
+       -1       eq_zk
+
+
+---- alpha  recursiva
+
+alpha(2)
+                (.LO, .L, .UP, .M = -INF, 109757.513579066, +INF, 0)
+        1       eq_zk
+        1       eq_rkf(1,2)
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 58
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders4a Using LP From line 348
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 1.216E+03, 1.047E+05] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 4.720E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 59
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders4a Using LP From line 348
+
+
+LOOPS                                 iter   2
+                                       snt   forwardpass
+                                         s   2
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           3     SINGLE EQUATIONS            6
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES            4
+NON ZERO ELEMENTS            15
+
+
+GENERATION TIME      =        0.004 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 2
+                                        snt forwardpass
+                                          s 2
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 60
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders4a Using LP From line 348
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders4a      OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  348
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE           136625.6320
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         4    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:       136625.632024
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk               .              .              .            -1.0000      
+
+  eq_zk  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+2.2.3      5151.2184      5391.3001        +INF             .          
+2.2.4      2651.4591      2651.4591        +INF           12.0350      
+2.2.5      2390.1836      4419.0984        +INF             .          
+2.2.6      1215.8151      8131.1411        +INF             .          
+
+---- EQU eq_rkf  ecuaciones
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.2    104715.3854    104715.3854        +INF            1.0000      
+
+---- VAR x  variables
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+2.4          .            88.3820        +INF             .          
+2.5          .              .            +INF           47.6502      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF       136625.6320        +INF             .          
+
+  Z  FO
+
+---- VAR alpha  recursiva
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+2        -INF       109757.5136        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 61
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    361 PARAMETER Z_kk  fo periodo previo
+
+            1           2           3           4           5
+
+1   21326.682   26868.118   18863.827   45318.974   45574.712
+2  157952.314  136625.632
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 62
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders4a Using LP From line 348
+
+
+---- eq_zk  =E=  funcion objetivo master j iteracion benders
+
+eq_zk..  305*x(3,6) + 531*x(3,7) + 805*x(3,8) + 516*x(3,9) - Z + alpha(3) =E= 0 ; (LHS = -26868.1184449959, INFES = 26868.1184449959 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(2,3,7)..  88*x(3,6) + 48*x(3,7) + 26*x(3,8) + 21*x(3,9) =G= 4746.43771712159 ; (LHS = 5442.67804797353)
+     
+eq_rk(2,3,8)..  81*x(3,6) + 19*x(3,7) + 95*x(3,8) + 70*x(3,9) =G= 2090.05574855252 ; (LHS = 5009.73774870291)
+     
+eq_rk(2,3,9)..  55*x(3,6) + 26*x(3,7) + 51*x(3,8) + 24*x(3,9) =G= 3401.67377998346 ; (LHS = 3401.67377998346)
+     
+
+---- eq_rkf  =G=  ecuaciones
+
+eq_rkf(1,3)..  - 143.244385733157*x(3,6) - 125.338837516513*x(3,7) - 107.433289299868*x(3,8) - 17.9055482166447*x(3,9) + alpha(3) =G= 82034.2195068252 ; (LHS = 82034.2195068252)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 63
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders4a Using LP From line 348
+
+
+---- x  variables
+
+x(3,6)
+                (.LO, .L, .UP, .M = 0, 61.8486141815174, +INF, 0)
+      305       eq_zk
+       88       eq_rk(2,3,7)
+       81       eq_rk(2,3,8)
+       55       eq_rk(2,3,9)
+     -143.2444  eq_rkf(1,3)
+
+x(3,7)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 444.441491533566)
+      531       eq_zk
+       48       eq_rk(2,3,7)
+       19       eq_rk(2,3,8)
+       26       eq_rk(2,3,9)
+     -125.3388  eq_rkf(1,3)
+
+x(3,8)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 496.788495256395)
+      805       eq_zk
+       26       eq_rk(2,3,7)
+       95       eq_rk(2,3,8)
+       51       eq_rk(2,3,9)
+     -107.4333  eq_rkf(1,3)
+
+REMAINING ENTRY SKIPPED
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 136625.632024062, +INF, 0)
+       -1       eq_zk
+
+
+---- alpha  recursiva
+
+alpha(3)
+                (.LO, .L, .UP, .M = -INF, 90893.6862537037, +INF, 0)
+        1       eq_zk
+        1       eq_rkf(1,3)
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 64
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders4a Using LP From line 348
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 2.090E+03, 8.203E+04] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 8.050E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 65
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders4a Using LP From line 348
+
+
+LOOPS                                 iter   2
+                                       snt   forwardpass
+                                         s   3
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           3     SINGLE EQUATIONS            5
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES            6
+NON ZERO ELEMENTS            23
+
+
+GENERATION TIME      =        0.004 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 2
+                                        snt forwardpass
+                                          s 3
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 66
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders4a Using LP From line 348
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders4a      OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  348
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE           109757.5136
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:       109757.513579
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk               .              .              .            -1.0000      
+
+  eq_zk  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+2.3.7      4746.4377      5442.6780        +INF             .          
+2.3.8      2090.0557      5009.7377        +INF             .          
+2.3.9      3401.6738      3401.6738        +INF            8.1499      
+
+---- EQU eq_rkf  ecuaciones
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.3     82034.2195     82034.2195        +INF            1.0000      
+
+---- VAR x  variables
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+3.6          .            61.8486        +INF             .          
+3.7          .              .            +INF          444.4415      
+3.8          .              .            +INF          496.7885      
+3.9          .              .            +INF          338.3080      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF       109757.5136        +INF             .          
+
+  Z  FO
+
+---- VAR alpha  recursiva
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+3        -INF        90893.6863        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 67
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    361 PARAMETER Z_kk  fo periodo previo
+
+            1           2           3           4           5
+
+1   21326.682   26868.118   18863.827   45318.974   45574.712
+2  157952.314  136625.632  109757.514
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 68
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders4a Using LP From line 348
+
+
+---- eq_zk  =E=  funcion objetivo master j iteracion benders
+
+eq_zk..  344*x(4,10) - Z + alpha(4) =E= 0 ; (LHS = -18863.8273253628, INFES = 18863.8273253628 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(2,4,10)..  24*x(4,10) =G= 3161.78891345214 ; (LHS = 3161.78891345214)
+     
+eq_rk(2,4,11)..  32*x(4,10) =G= 4038.39445672607 ; (LHS = 4215.71855126952)
+     
+eq_rk(2,4,12)..  70*x(4,10) =G= 1595.63752763366 ; (LHS = 9221.88433090207)
+     
+
+---- eq_rkf  =G=  ecuaciones
+
+eq_rkf(1,4)..  - 85.7331571994716*x(4,10) + alpha(4) =G= 34280.1224130339 ; (LHS = 34280.1224130339)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 69
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders4a Using LP From line 348
+
+
+---- x  variables
+
+x(4,10)
+                (.LO, .L, .UP, .M = 0, 131.741204727172, +INF, 0)
+      344       eq_zk
+       24       eq_rk(2,4,10)
+       32       eq_rk(2,4,11)
+       70       eq_rk(2,4,12)
+      -85.7332  eq_rkf(1,4)
+
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 109757.513579066, +INF, 0)
+       -1       eq_zk
+
+
+---- alpha  recursiva
+
+alpha(4)
+                (.LO, .L, .UP, .M = -INF, 45574.7118275563, +INF, 0)
+        1       eq_zk
+        1       eq_rkf(1,4)
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 70
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders4a Using LP From line 348
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 1.596E+03, 3.428E+04] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 3.440E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 71
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders4a Using LP From line 348
+
+
+LOOPS                                 iter   2
+                                       snt   forwardpass
+                                         s   4
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           3     SINGLE EQUATIONS            5
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             8
+
+
+GENERATION TIME      =        0.003 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 2
+                                        snt forwardpass
+                                          s 4
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 72
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders4a Using LP From line 348
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders4a      OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  348
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE            90893.6863
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:        90893.686254
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk               .              .              .            -1.0000      
+
+  eq_zk  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+              LOWER          LEVEL          UPPER         MARGINAL
+
+2.4.10      3161.7889      3161.7889        +INF           17.9055      
+2.4.11      4038.3945      4215.7186        +INF             .          
+2.4.12      1595.6375      9221.8843        +INF             .          
+
+---- EQU eq_rkf  ecuaciones
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.4     34280.1224     34280.1224        +INF            1.0000      
+
+---- VAR x  variables
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+4.10          .           131.7412        +INF             .          
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF        90893.6863        +INF             .          
+
+  Z  FO
+
+---- VAR alpha  recursiva
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+4        -INF        45574.7118        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 73
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    361 PARAMETER Z_kk  fo periodo previo
+
+            1           2           3           4           5
+
+1   21326.682   26868.118   18863.827   45318.974   45574.712
+2  157952.314  136625.632  109757.514   90893.686
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 74
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders2a Using LP From line 372
+
+
+---- eq_zk1  =E=  funcion objetivo master j iteracion benders
+
+eq_zk1..  740*x(5,11) + 764*x(5,12) + 386*x(5,13) - Z =E= 0 ; (LHS = -45318.9744261473, INFES = 45318.9744261473 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(2,5,13)..  69*x(5,11) + 62*x(5,12) + 99*x(5,13) =G= 5151.22361418152 ; (LHS = 5151.22361418152)
+     
+eq_rk(2,5,14)..  64*x(5,11) + 48*x(5,12) + 26*x(5,13) =G= 3835.92963781738 ; (LHS = 3835.92963781738)
+     
+eq_rk(2,5,15)..  60*x(5,11) + 28*x(5,12) + 16*x(5,13) =G= 3383.70602363586 ; (LHS = 3476.33198399021)
+     
+REMAINING 2 ENTRIES SKIPPED
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 75
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders2a Using LP From line 372
+
+
+---- x  variables
+
+x(5,11)
+                (.LO, .L, .UP, .M = 0, 54.1226816766185, +INF, 0)
+      740       eq_zk1
+       69       eq_rk(2,5,13)
+       64       eq_rk(2,5,14)
+       60       eq_rk(2,5,15)
+       85       eq_rk(2,5,16)
+       68       eq_rk(2,5,17)
+
+x(5,12)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 196.669308674593)
+      764       eq_zk1
+       62       eq_rk(2,5,13)
+       48       eq_rk(2,5,14)
+       28       eq_rk(2,5,15)
+       57       eq_rk(2,5,16)
+       32       eq_rk(2,5,17)
+
+x(5,13)
+                (.LO, .L, .UP, .M = 0, 14.3106927120691, +INF, 0)
+      386       eq_zk1
+       99       eq_rk(2,5,13)
+       26       eq_rk(2,5,14)
+       16       eq_rk(2,5,15)
+       99       eq_rk(2,5,16)
+       91       eq_rk(2,5,17)
+
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 90893.6862537037, +INF, 0)
+       -1       eq_zk1
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 76
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders2a Using LP From line 372
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 3.384E+03, 5.151E+03] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 7.640E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 77
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders2a Using LP From line 372
+
+
+LOOPS                                 iter   2
+                                       snt   forwardpass
+                                         s   5
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           2     SINGLE EQUATIONS            6
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            4
+NON ZERO ELEMENTS            19
+
+
+GENERATION TIME      =        0.004 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 2
+                                        snt forwardpass
+                                          s 5
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 78
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders2a Using LP From line 372
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders2a      OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  372
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE            45574.7118
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:        45574.711828
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk1              .              .              .            -1.0000      
+
+  eq_zk1  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+              LOWER          LEVEL          UPPER         MARGINAL
+
+2.5.13      5151.2236      5151.2236        +INF            1.2030      
+2.5.14      3835.9296      3835.9296        +INF           10.2655      
+2.5.15      3383.7060      3476.3320        +INF             .          
+2.5.16      4025.4472      6017.1865        +INF             .          
+2.5.17      3831.2236      4982.6154        +INF             .          
+
+---- VAR x  variables
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+5.11          .            54.1227        +INF             .          
+5.12          .              .            +INF          196.6693      
+5.13          .            14.3107        +INF             .          
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF        45574.7118        +INF             .          
+
+  Z  FO
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 79
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    395 PARAMETER Z_kk  fo periodo previo
+
+            1           2           3           4           5
+
+1   21326.682   26868.118   18863.827   45318.974   45574.712
+2  157952.314  136625.632  109757.514   90893.686   45574.712
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 80
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders4 Using LP From line 414
+
+
+---- eq_zk  =E=  funcion objetivo master j iteracion benders
+
+eq_zk..  344*x(4,10) - Z + alpha(4) =E= 0 ; (LHS = 45318.9744261473, INFES = 45318.9744261473 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(2,4,10)..  24*x(4,10) =G= 3161.78891345214 ; (LHS = 3161.78891345214)
+     
+eq_rk(2,4,11)..  32*x(4,10) =G= 4038.39445672607 ; (LHS = 4215.71855126952)
+     
+eq_rk(2,4,12)..  70*x(4,10) =G= 1595.63752763366 ; (LHS = 9221.88433090207)
+     
+
+---- eq_rkb  =G=  ecuaciones
+
+eq_rkb(2,4)..  - 85.7331571994716*x(4,10) + alpha(4) =G= 34280.1224130339 ; (LHS = 34280.1224130339)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 81
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders4 Using LP From line 414
+
+
+---- x  variables
+
+x(4,10)
+                (.LO, .L, .UP, .M = 0, 131.741204727172, +INF, 0)
+      344       eq_zk
+       24       eq_rk(2,4,10)
+       32       eq_rk(2,4,11)
+       70       eq_rk(2,4,12)
+      -85.7332  eq_rkb(2,4)
+
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 45574.7118275563, +INF, 0)
+       -1       eq_zk
+
+
+---- alpha  recursiva
+
+alpha(4)
+                (.LO, .L, .UP, .M = -INF, 45574.7118275563, +INF, 0)
+        1       eq_zk
+        1       eq_rkb(2,4)
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 82
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders4 Using LP From line 414
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 1.596E+03, 3.428E+04] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 3.440E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 83
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders4 Using LP From line 414
+
+
+LOOPS                                 iter   2
+                                       snt   backwardpass
+                                         s   2
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           3     SINGLE EQUATIONS            5
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             8
+
+
+GENERATION TIME      =        0.003 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 2
+                                        snt backwardpass
+                                          s 2
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 84
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders4 Using LP From line 414
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders4       OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  414
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE            90893.6863
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:        90893.686254
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk               .              .              .            -1.0000      
+
+  eq_zk  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+              LOWER          LEVEL          UPPER         MARGINAL
+
+2.4.10      3161.7889      3161.7889        +INF           17.9055      
+2.4.11      4038.3945      4215.7186        +INF             .          
+2.4.12      1595.6375      9221.8843        +INF             .          
+
+---- EQU eq_rkb  ecuaciones
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+2.4     34280.1224     34280.1224        +INF            1.0000      
+
+---- VAR x  variables
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+4.10          .           131.7412        +INF             .          
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF        90893.6863        +INF             .          
+
+  Z  FO
+
+---- VAR alpha  recursiva
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+4        -INF        45574.7118        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 85
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    437 PARAMETER Z_kk_b  fo periodo previo
+
+            2           3           4           5
+
+1  136625.632  109757.514   90893.686   45574.712
+2                           90893.686   45574.712
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 86
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders4 Using LP From line 414
+
+
+---- eq_zk  =E=  funcion objetivo master j iteracion benders
+
+eq_zk..  305*x(3,6) + 531*x(3,7) + 805*x(3,8) + 516*x(3,9) - Z + alpha(3) =E= 0 ; (LHS = 18863.8273253628, INFES = 18863.8273253628 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(2,3,7)..  88*x(3,6) + 48*x(3,7) + 26*x(3,8) + 21*x(3,9) =G= 4746.43771712159 ; (LHS = 5442.67804797353)
+     
+eq_rk(2,3,8)..  81*x(3,6) + 19*x(3,7) + 95*x(3,8) + 70*x(3,9) =G= 2090.05574855252 ; (LHS = 5009.73774870291)
+     
+eq_rk(2,3,9)..  55*x(3,6) + 26*x(3,7) + 51*x(3,8) + 24*x(3,9) =G= 3401.67377998346 ; (LHS = 3401.67377998346)
+     
+
+---- eq_rkb  =G=  ecuaciones
+
+eq_rkb(2,3)..  - 143.244385733157*x(3,6) - 125.338837516513*x(3,7) - 107.433289299868*x(3,8) - 17.9055482166447*x(3,9) + alpha(3) =G= 82034.2195068252 ; (LHS = 82034.2195068252)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 87
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders4 Using LP From line 414
+
+
+---- x  variables
+
+x(3,6)
+                (.LO, .L, .UP, .M = 0, 61.8486141815174, +INF, 0)
+      305       eq_zk
+       88       eq_rk(2,3,7)
+       81       eq_rk(2,3,8)
+       55       eq_rk(2,3,9)
+     -143.2444  eq_rkb(2,3)
+
+x(3,7)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 444.441491533566)
+      531       eq_zk
+       48       eq_rk(2,3,7)
+       19       eq_rk(2,3,8)
+       26       eq_rk(2,3,9)
+     -125.3388  eq_rkb(2,3)
+
+x(3,8)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 496.788495256395)
+      805       eq_zk
+       26       eq_rk(2,3,7)
+       95       eq_rk(2,3,8)
+       51       eq_rk(2,3,9)
+     -107.4333  eq_rkb(2,3)
+
+REMAINING ENTRY SKIPPED
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 90893.6862537037, +INF, 0)
+       -1       eq_zk
+
+
+---- alpha  recursiva
+
+alpha(3)
+                (.LO, .L, .UP, .M = -INF, 90893.6862537037, +INF, 0)
+        1       eq_zk
+        1       eq_rkb(2,3)
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 88
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders4 Using LP From line 414
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 2.090E+03, 8.203E+04] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 8.050E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 89
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders4 Using LP From line 414
+
+
+LOOPS                                 iter   2
+                                       snt   backwardpass
+                                         s   3
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           3     SINGLE EQUATIONS            5
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES            6
+NON ZERO ELEMENTS            23
+
+
+GENERATION TIME      =        0.002 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 2
+                                        snt backwardpass
+                                          s 3
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 90
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders4 Using LP From line 414
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders4       OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  414
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE           109757.5136
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:       109757.513579
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk               .              .              .            -1.0000      
+
+  eq_zk  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+2.3.7      4746.4377      5442.6780        +INF             .          
+2.3.8      2090.0557      5009.7377        +INF             .          
+2.3.9      3401.6738      3401.6738        +INF            8.1499      
+
+---- EQU eq_rkb  ecuaciones
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+2.3     82034.2195     82034.2195        +INF            1.0000      
+
+---- VAR x  variables
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+3.6          .            61.8486        +INF             .          
+3.7          .              .            +INF          444.4415      
+3.8          .              .            +INF          496.7885      
+3.9          .              .            +INF          338.3080      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF       109757.5136        +INF             .          
+
+  Z  FO
+
+---- VAR alpha  recursiva
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+3        -INF        90893.6863        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 91
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    437 PARAMETER Z_kk_b  fo periodo previo
+
+            2           3           4           5
+
+1  136625.632  109757.514   90893.686   45574.712
+2              109757.514   90893.686   45574.712
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 92
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE multibenders4 Using LP From line 414
+
+
+---- eq_zk  =E=  funcion objetivo master j iteracion benders
+
+eq_zk..  304*x(2,4) + 472*x(2,5) - Z + alpha(2) =E= 0 ; (LHS = 26868.1184449959, INFES = 26868.1184449959 ****)
+     
+
+---- eq_rk  =G=  ecuaciones
+
+eq_rk(2,2,3)..  61*x(2,4) + 74*x(2,5) =G= 5151.21836228288 ; (LHS = 5391.30008271299)
+     
+eq_rk(2,2,4)..  30*x(2,4) + 40*x(2,5) =G= 2651.45905707196 ; (LHS = 2651.45905707196)
+     
+eq_rk(2,2,5)..  50*x(2,4) + 95*x(2,5) =G= 2390.18362282878 ; (LHS = 4419.09842845327)
+     
+REMAINING ENTRY SKIPPED
+
+
+---- eq_rkb  =G=  ecuaciones
+
+eq_rkb(2,2)..  - 57.0492854569473*x(2,4) - 57.0492854569473*x(2,5) + alpha(2) =G= 104715.385424923 ; (LHS = 104715.385424923)
+     
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 93
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE multibenders4 Using LP From line 414
+
+
+---- x  variables
+
+x(2,4)
+                (.LO, .L, .UP, .M = 0, 88.3819685690653, +INF, 0)
+      304       eq_zk
+       61       eq_rk(2,2,3)
+       30       eq_rk(2,2,4)
+       50       eq_rk(2,2,5)
+       92       eq_rk(2,2,6)
+      -57.0493  eq_rkb(2,2)
+
+x(2,5)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 47.6502381810176)
+      472       eq_zk
+       74       eq_rk(2,2,3)
+       40       eq_rk(2,2,4)
+       95       eq_rk(2,2,5)
+       70       eq_rk(2,2,6)
+      -57.0493  eq_rkb(2,2)
+
+
+---- Z  FO
+
+Z
+                (.LO, .L, .UP, .M = -INF, 109757.513579066, +INF, 0)
+       -1       eq_zk
+
+
+---- alpha  recursiva
+
+alpha(2)
+                (.LO, .L, .UP, .M = -INF, 109757.513579066, +INF, 0)
+        1       eq_zk
+        1       eq_rkb(2,2)
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 94
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE multibenders4 Using LP From line 414
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 1.216E+03, 1.047E+05] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 4.720E+02]
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 95
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE multibenders4 Using LP From line 414
+
+
+LOOPS                                 iter   2
+                                       snt   backwardpass
+                                         s   4
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           3     SINGLE EQUATIONS            6
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES            4
+NON ZERO ELEMENTS            15
+
+
+GENERATION TIME      =        0.003 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+               L O O P S               iter 2
+                                        snt backwardpass
+                                          s 4
+
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 96
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE multibenders4 Using LP From line 414
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   multibenders4       OBJECTIVE  Z
+     TYPE    LP                  DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  414
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE           136625.6320
+
+ RESOURCE USAGE, LIMIT          0.001 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+--- *** This solver runs with a demo license. No commercial use.
+
+Reading parameter(s) from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+>>  preind 0
+>>  scaind -1
+>>  lpmethod 1
+Finished reading from "/home/daniel/Documents/tesis_maestria/cplex.opt"
+
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Optimal solution found
+Objective:       136625.632024
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_zk               .              .              .            -1.0000      
+
+  eq_zk  funcion objetivo master j iteracion benders
+
+---- EQU eq_rk  ecuaciones
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+2.2.3      5151.2184      5391.3001        +INF             .          
+2.2.4      2651.4591      2651.4591        +INF           12.0350      
+2.2.5      2390.1836      4419.0984        +INF             .          
+2.2.6      1215.8151      8131.1411        +INF             .          
+
+---- EQU eq_rkb  ecuaciones
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+2.2    104715.3854    104715.3854        +INF            1.0000      
+
+---- VAR x  variables
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+2.4          .            88.3820        +INF             .          
+2.5          .              .            +INF           47.6502      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF       136625.6320        +INF             .          
+
+  Z  FO
+
+---- VAR alpha  recursiva
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+2        -INF       109757.5136        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 09:41:20 Page 97
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    437 PARAMETER Z_kk_b  fo periodo previo
+
+            2           3           4           5
+
+1  136625.632  109757.514   90893.686   45574.712
+2  136625.632  109757.514   90893.686   45574.712
+
+
+----    456 PARAMETER x_kk  variable perido previo
+
+              1           2           4           6          10          11          13
+
+1.1      49.253      19.103
+1.2                              88.382
+1.3                                          61.849
+1.4                                                     131.741
+1.5                                                                  54.123      14.311
+2.1      49.253      19.103
+2.2                              88.382
+2.3                                          61.849
+2.4                                                     131.741
+2.5                                                                  54.123      14.311
+
+
+----    456 PARAMETER x_kk_b  variable perido previo
+
+              4           6          10
+
+1.2      88.382
+1.3                  61.849
+1.4                             131.741
+2.2      88.382
+2.3                  61.849
+2.4                             131.741
+
+
+----    456 PARAMETER pi_kk  marginal de ecuacion
+
+              4           9          10          13          14
+
+1.2      12.035
+1.3                   8.150
+1.4                              17.906
+1.5                                           1.203      10.266
+2.2      12.035
+2.3                   8.150
+2.4                              17.906
+2.5                                           1.203      10.266
+
+
+----    456 PARAMETER pi_kk_f  marginal de ecuacion
+
+              1           2           4           9          10
+
+1.1       2.191       6.814
+1.2                              10.133
+1.3                                           5.545
+1.4                                                      14.333
+2.1       2.534       6.948
+2.2                              12.035
+2.3                                           8.150
+2.4                                                      17.906
+
+
+----    456 PARAMETER deltha_kk  factibilidad (0 0 1)
+
+            1           2           3           4
+
+1       1.000       1.000       1.000       1.000
+2       1.000       1.000       1.000       1.000
+
+
+----    456 PARAMETER theta_kk  funcion recursiva
+
+            1           2           3           4
+
+1  136625.632  109757.514   90893.686   45574.712
+2  136625.632  109757.514   90893.686   45574.712
+
+
+----    456 PARAMETER alpha_b_kk  funcion recursiva
+
+            2           3           4
+
+1  109757.514   90893.686   45574.712
+2  109757.514   90893.686   45574.712
+
+
+----    456 PARAMETER alpha_kk  funcion recursiva
+
+            1           2           3           4
+
+2  136625.632  109757.514   90893.686   45574.712
+
+
+----    456 PARAMETER mu_kk  dual del corte
+
+            2           3           4
+
+1       1.000       1.000       1.000
+2       1.000       1.000       1.000
+
+
+----    456 PARAMETER betha_kk  cota del corte
+
+            2           3           4
+
+1  104715.385   82034.220   34280.122
+2  104715.385   82034.220   34280.122
+
+
+----    456 PARAMETER Z_kk  fo periodo previo
+
+            1           2           3           4           5
+
+1   21326.682   26868.118   18863.827   45318.974   45574.712
+2  157952.314  136625.632  109757.514   90893.686   45574.712
+
+
+----    456 PARAMETER Z_kk_b  fo periodo previo
+
+            2           3           4           5
+
+1  136625.632  109757.514   90893.686   45574.712
+2  136625.632  109757.514   90893.686   45574.712
+
+
+----    456 PARAMETER Z_inferior  cota inferior
+
+1  21326.682,    2 157952.314,    3       -INF,    4       -INF,    5       -INF
+
+
+----    456 PARAMETER Z_inferior_1  cota inferior
+
+2 157952.314
+
+
+----    456 PARAMETER Z_inferior_2  cota inferior
+
+2 157952.314
+
+
+----    456 PARAMETER Z_superior  cota superior
+
+1 157952.314,    2 157952.314,    3       +INF,    4       +INF,    5       +INF
+
+
+----    456 PARAMETER Z_sup                =   136625.632  cota superior
+            PARAMETER Z_inf                =   136625.632  cota inferior
+
+----    456 PARAMETER GAP  diferencias entre cotas
+
+1       0.844,    2 2.22045E-16
+
+
+----    456 SET dyniter  subconjunto dinamico iteraciones
+
+2
+
+
+
+EXECUTION TIME       =        0.473 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
+
+
+USER: GAMS Demo license for Daniel Jimenez           G230406|0002CO-GEN
+      Universidad Nacional de Ingenieria, Peru                 DL089513
+
+
+**** FILE SUMMARY
+
+Input      /home/daniel/Documents/tesis_maestria/benders_multi_0_mod.gms
+Output     /home/daniel/Documents/tesis_maestria/benders_multi_0_mod.lst

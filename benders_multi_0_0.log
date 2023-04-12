@@ -1,0 +1,53 @@
+--- Job benders_multi_0_0.gms Start 04/10/23 10:53:52 42.5.0 cf11b917 LEX-LEG x86 64bit/Linux
+--- Applying:
+    /opt/gams/gams42.5_linux_x64_64_sfx/gmsprmun.txt
+    /home/daniel/.config/GAMS/gamsconfig.yaml
+--- GAMS Parameters defined
+    Input /home/daniel/Documents/tesis_maestria/benders_multi_0_0.gms
+    PageSize 0
+    ScrDir /home/daniel/Documents/tesis_maestria/225a/
+    SysDir /opt/gams/gams42.5_linux_x64_64_sfx/
+    LogOption 3
+    ErrMsg 1
+    ErrorLog 99
+    IDE 1
+    LstTitleLeftAligned 1
+Licensee: GAMS Demo license for Daniel Jimenez           G230406|0002CO-GEN
+          Universidad Nacional de Ingenieria, Peru                 DL089513
+          /home/daniel/.local/share/GAMS/gamslice.txt
+          djimeneza@uni.pe, Daniel Jimenez                                 
+          Demo license for demonstration and instructional purposes only
+Processor information: 1 socket(s), 4 core(s), and 8 thread(s) available
+GAMS 42.5.0   Copyright (C) 1987-2023 GAMS Development. All rights reserved
+--- Starting compilation
+--- benders_multi_0_0.gms(11) 2 Mb 1 Error
+*** Error 282 in /home/daniel/Documents/tesis_maestria/benders_multi_0_0.gms
+    Unable to open include file
+       Hint: Does the filename need to be quoted?
+--- benders_multi_0_0.gms(14) 2 Mb 2 Errors
+*** Error 120 in /home/daniel/Documents/tesis_maestria/benders_multi_0_0.gms
+    Unknown identifier entered as set
+--- benders_multi_0_0.gms(24) 2 Mb 3 Errors
+*** Error 120 in /home/daniel/Documents/tesis_maestria/benders_multi_0_0.gms
+    Unknown identifier entered as set
+--- benders_multi_0_0.gms(27) 2 Mb 4 Errors
+*** Error 140 in /home/daniel/Documents/tesis_maestria/benders_multi_0_0.gms
+    Unknown symbol
+--- benders_multi_0_0.gms(29) 2 Mb 6 Errors
+*** Error 140 in /home/daniel/Documents/tesis_maestria/benders_multi_0_0.gms
+    Unknown symbol
+*** Error 140 in /home/daniel/Documents/tesis_maestria/benders_multi_0_0.gms
+    Unknown symbol
+--- benders_multi_0_0.gms(34) 2 Mb 7 Errors
+*** Error 257 in /home/daniel/Documents/tesis_maestria/benders_multi_0_0.gms
+    Solve statement not checked because of previous errors
+--- benders_multi_0_0.gms(47) 2 Mb 8 Errors
+*** Error 141 in /home/daniel/Documents/tesis_maestria/benders_multi_0_0.gms
+    Symbol declared but no values have been assigned. Check for missing
+       data definition, assignment, data loading or implicit assignment
+       via a solve statement.
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- benders_multi_0_0.gms(51) 2 Mb 8 Errors
+*** Status: Compilation error(s)
+--- Job benders_multi_0_0.gms Stop 04/10/23 10:53:52 elapsed 0:00:00.007

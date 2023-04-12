@@ -1,0 +1,92 @@
+GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/10/23 10:53:52 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   1  *modelado de algoritmos de descomposicion con GAMS
+   2  *descomposicion de benders multietapa
+   3  *27 de enero de 2016
+   4  *Ing. Daniel Jimenez
+   5  *  min z = 8x1+10x2+12x3+16x4
+   6  *          2x1                   = 50
+   7  *        +12x1+15x2              = 60
+   8  *              13x2+9x3          = 70
+   9  *                  +3x3+32x4     = 80
+  10   
+  11  $INCLUDE ./input.DAT
+****                     $282
+**** 282  Unable to open include file
+****         Hint: Does the filename need to be quoted?
+  12   
+  13  positive variables
+  14  x(i)     variables
+****    $120
+**** 120  Unknown identifier entered as set
+  15  ;
+  16   
+  17  variables
+  18  Z      FO
+  19  *x(i)     variables
+  20  ;
+  21   
+  22  equations
+  23  eq_z      funcion objetivo master
+  24  eq_r1(m)  ecuaciones
+****        $120
+**** 120  Unknown identifier entered as set
+  25  ;
+  26   
+  27  eq_z..           sum[i, c(i)*x(i)]   =e= Z  ;
+****                          $140
+**** 140  Unknown symbol
+  28   
+  29  eq_r1(m)..       sum[i, A(m,i)*x(i)] =g= B(m);
+****                          $140             $140
+**** 140  Unknown symbol
+  30   
+  31   
+  32  model multibenders /all/
+  33   
+  34  solve multibenders using LP minimizing Z;
+****                                          $257
+**** 257  Solve statement not checked because of previous errors
+  35   
+  36  execute_unload 'data_final.gdx';
+  37   
+  38  FILE RESULTADO_FINAL /salida.put/;
+  39  PUT RESULTADO_FINAL;
+  40  RESULTADO_FINAL.nd = 2;
+  41  RESULTADO_FINAL.nj = 2;
+  42  RESULTADO_FINAL.pw = 5000;
+  43   
+  44  PUT "i    ",PUT "x"/;
+  45  PUT /
+  46  LOOP(i,
+  47          PUT i.tl:7,PUT x.l(i);
+****                           $141
+**** 141  Symbol declared but no values have been assigned. Check for missing
+****         data definition, assignment, data loading or implicit assignment
+****         via a solve statement.
+****         A wild shot: You may have spurious commas in the explanatory
+****         text of a declaration. Check symbol reference list.
+  48          PUT ""/;
+  49  );
+  50  PUT ""/
+  51   
+
+**** 8 ERROR(S)   0 WARNING(S)
+
+
+COMPILATION TIME     =        0.004 SECONDS      2 MB  42.5.0 cf11b917 LEX-LEG
+
+
+USER: GAMS Demo license for Daniel Jimenez           G230406|0002CO-GEN
+      Universidad Nacional de Ingenieria, Peru                 DL089513
+
+
+**** FILE SUMMARY
+
+Input      /home/daniel/Documents/tesis_maestria/benders_multi_0_0.gms
+Output     /home/daniel/Documents/tesis_maestria/benders_multi_0_0.lst
+
+**** USER ERROR(S) ENCOUNTERED
