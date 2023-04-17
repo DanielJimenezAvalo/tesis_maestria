@@ -174,3 +174,12 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
+
+
+.gams
+gams/
+gams.bak/
+*.gdx
+*.gsp
+*.lst
+_gams*

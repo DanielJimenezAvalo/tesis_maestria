@@ -9,7 +9,9 @@ sets
     B(m)     cotas restricciones
     A(m,i)    coeficientes restricciones master    
     ;
-    
+
+Scalar bmult  demand multiplier /1/;  
+
 $if not set gdxincname $abort 'no include file name for data file provided'
 $gdxin %gdxincname%
 $load i m C B A
@@ -30,11 +32,9 @@ eq_r1(m)  ecuaciones
 
 eq_z..           sum[i, c(i)*x(i)]   =e= Z  ;
 
-eq_r1(m)..       sum[i, A(m,i)*x(i)] =g= B(m);
+eq_r1(m)..       sum[i, A(m,i)*x(i)] =g= bmult*B(m);
 
 
 model multibenders /all/
 
-solve multibenders using LP minimizing Z;
-  
     

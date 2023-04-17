@@ -157,6 +157,25 @@ if __name__ == "__main__":
     print(dict_variables_values)
     print(dict_variables_marginal)
     print(dict_variables_upper)
+
+    print('························')
+    print("t2.out_db.get_variable('Z')")
+    print(t2.out_db.get_variable('Z'),"\n",
+          t2.out_db.get_variable('Z').__len__(),"\n",
+          list(t2.out_db.get_variable('Z')),"\n",
+          list(t2.out_db.get_variable('Z')).__len__(),"\n")
+    
+    array_column_variable=['level','marginal','upper','lower']
+    dict_variables_values={}
+    dict_variables_marginal={}
+    dict_variables_upper={}
+    dict_variables_values['level']= str(t2.out_db.get_variable('Z').find_record().level)
+    dict_variables_marginal['marginal']= str(t2.out_db.get_variable('Z').find_record().marginal)
+    dict_variables_upper['lower']=str(t2.out_db.get_variable('Z').find_record().lower)
+    
+    print(dict_variables_values)
+    print(dict_variables_marginal)
+    print(dict_variables_upper)
     
     print('························')
     print("t2.out_db['x']")
@@ -164,6 +183,8 @@ if __name__ == "__main__":
           t2.out_db['x'].__len__(),"\n",
           list(t2.out_db['x']),"\n",
           list(t2.out_db['x']).__len__(),"\n")
+    
+    
     
     print('························')
     print("t2.out_db.get_equation('eq_r1')")

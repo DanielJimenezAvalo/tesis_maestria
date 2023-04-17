@@ -1,7 +1,7 @@
 from gams import GamsWorkspace
 import os
 import sys
-from pprint import pprint
+import pkg
 
 def get_data_text():
     return '''
@@ -88,8 +88,8 @@ sets
     A(m,i)    coeficientes restricciones master    
     ;
 
+Scalar bmult  demand multiplier /1/;  
 
-    
 $if not set gdxincname $abort 'no include file name for data file provided'
 $gdxin %gdxincname%
 $load i m C B A
@@ -110,13 +110,11 @@ eq_r1(m)  ecuaciones
 
 eq_z..           sum[i, c(i)*x(i)]   =e= Z  ;
 
-eq_r1(m)..       sum[i, A(m,i)*x(i)] =g= B(m);
+eq_r1(m)..       sum[i, A(m,i)*x(i)] =g= bmult*B(m);
 
 
 model multibenders /all/
 
-solve multibenders using LP minimizing Z;
-  
     '''
 
 
@@ -125,49 +123,35 @@ if __name__ == "__main__":
         ws = GamsWorkspace(system_directory = sys.argv[1])
     else:
         ws = GamsWorkspace('.')
-        
-    '''  
-    file = open(os.path.join(ws.working_directory, "tdata.gms"), "w")
-    file.write(get_data_text())
-    file.close()
+
     
-    t2 = ws.add_job_from_string(get_model_text())
+    #call of data and creation of gdx file
+    t5 = ws.add_job_from_string(get_data_text())
+    t5.run()
+    t5.out_db.export(os.path.join(ws.working_directory, "tdata.gdx"))
+    #complete the model
+    t5 = ws.add_job_from_string(get_model_text())
+    #insert gdx file as an option
     opt = ws.add_options()
-    opt.defines["incname"] = "tdata"
-    t2.run(opt)
-    '''
-    
-    t3 = ws.add_job_from_string(get_data_text())
-    t3.run()
-    t3.out_db.export(os.path.join(ws.working_directory, "tdata.gdx"))
-    t3 = ws.add_job_from_string(get_model_text())
-    
-    opt = ws.add_options()
-    opt.defines["gdxincname"] = "tdata"
+    opt.defines["gdxincname"] = "tdata.gdx"
     opt.all_model_types = "cplex"
-    t3.run(opt)
-    
-    print('························')
-    print("t3.out_db")
-    print(t3.out_db,"\n",
-          t3.out_db.__len__(),"\n",
-          list(t3.out_db),"\n")
-    
-    print('························')
-    print("t3.out_db.get_variable('x')")
-    print(t3.out_db.get_variable('x'),"\n",
-          t3.out_db.get_variable('x').__len__(),"\n",
-          list(t3.out_db.get_variable('x')),"\n")
-    
-    array_column_variable=['level','marginal','upper','lower']
-    dict_variables_values={}
-    dict_variables_marginal={}
-    dict_variables_upper={}
-    for rec in t3.out_db.get_variable('x'):
-        dict_variables_values[rec.key(0)]= str(rec.level)
-        dict_variables_marginal[rec.key(0)]= str(rec.marginal)
-        dict_variables_upper[rec.key(0)]=str(rec.upper)
-    
-    print(dict_variables_values)
-    print(dict_variables_marginal)
-    print(dict_variables_upper)
+
+    # initialize a GAMSCheckpoint by running a GAMSJob
+    cp = ws.add_checkpoint()
+
+    t5.run(gams_options=opt,checkpoint=cp)
+
+    bmultlist = [ 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3 ]
+
+    # create a new GAMSJob that is initialized from the GAMSCheckpoint
+    for b in bmultlist:
+        t5 = ws.add_job_from_string("bmult=" + str(b) + "; solve multibenders using LP minimizing Z;", cp)
+        t5.run(gams_options=opt)
+        #t5.run(gams_options=opt,checkpoint=cp)
+        print("Scenario bmult=" + str(b) + ":")
+
+        job=pkg.export_df_api_python.create_inform_df(t5)
+        job.print_get_varible('x')
+        job.print_get_equation('eq_r1')
+        job.print_get_varible('Z')
+        job.print_get_equation('eq_z')

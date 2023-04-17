@@ -2,6 +2,7 @@ from gams import GamsWorkspace
 import os
 import sys
 from pprint import pprint
+import pkg
 
 def get_data_text():
     return '''
@@ -87,13 +88,9 @@ sets
     B(m)     cotas restricciones
     A(m,i)    coeficientes restricciones master    
     ;
-
-
     
-$if not set gdxincname $abort 'no include file name for data file provided'
-$gdxin %gdxincname%
-$load i m C B A
-$gdxin
+$if not set incname $abort 'no include file name for data file provided'
+$include %incname%
 
 positive variables
 x(i)     variables
@@ -126,7 +123,7 @@ if __name__ == "__main__":
     else:
         ws = GamsWorkspace('.')
         
-    '''  
+      
     file = open(os.path.join(ws.working_directory, "tdata.gms"), "w")
     file.write(get_data_text())
     file.close()
@@ -135,39 +132,10 @@ if __name__ == "__main__":
     opt = ws.add_options()
     opt.defines["incname"] = "tdata"
     t2.run(opt)
-    '''
-    
-    t3 = ws.add_job_from_string(get_data_text())
-    t3.run()
-    t3.out_db.export(os.path.join(ws.working_directory, "tdata.gdx"))
-    t3 = ws.add_job_from_string(get_model_text())
-    
-    opt = ws.add_options()
-    opt.defines["gdxincname"] = "tdata"
-    opt.all_model_types = "cplex"
-    t3.run(opt)
-    
-    print('························')
-    print("t3.out_db")
-    print(t3.out_db,"\n",
-          t3.out_db.__len__(),"\n",
-          list(t3.out_db),"\n")
-    
-    print('························')
-    print("t3.out_db.get_variable('x')")
-    print(t3.out_db.get_variable('x'),"\n",
-          t3.out_db.get_variable('x').__len__(),"\n",
-          list(t3.out_db.get_variable('x')),"\n")
-    
-    array_column_variable=['level','marginal','upper','lower']
-    dict_variables_values={}
-    dict_variables_marginal={}
-    dict_variables_upper={}
-    for rec in t3.out_db.get_variable('x'):
-        dict_variables_values[rec.key(0)]= str(rec.level)
-        dict_variables_marginal[rec.key(0)]= str(rec.marginal)
-        dict_variables_upper[rec.key(0)]=str(rec.upper)
-    
-    print(dict_variables_values)
-    print(dict_variables_marginal)
-    print(dict_variables_upper)
+
+    job=pkg.export_df_api_python.create_inform_df(t2)
+    job.print_get_varible('x')
+    job.print_get_equation('eq_r1')
+    job.print_get_varible('Z')
+    job.print_get_equation('eq_z')
+

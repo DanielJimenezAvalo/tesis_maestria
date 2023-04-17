@@ -1,4 +1,4 @@
-GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/11/23 11:54:52 Page 1
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 04/17/23 16:31:27 Page 1
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 C o m p i l a t i o n
 
@@ -15,218 +15,64 @@ C o m p i l a t i o n
   10      A(m,i)    coeficientes restricciones master
   11      ;
   12   
-GDXIN   /home/daniel/Documents/tesis_maestria/tdata.gdx
+  13  Scalar bmult  demand multiplier /1/;
+  14   
+GDXIN   C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\tdata.gdx
 --- LOAD  i = 1:i
 --- LOAD  m = 2:m
 --- LOAD  C = 3:C
 --- LOAD  B = 4:B
 --- LOAD  A = 5:A
-  17   
-  18  positive variables
-  19  x(i)     variables
-  20  ;
-  21   
-  22  variables
-  23  Z      FO
-  24  ;
-  25   
-  26  equations
-  27  eq_z      funcion objetivo master
-  28  eq_r1(m)  ecuaciones
-  29  ;
-  30   
-  31  eq_z..           sum[i, c(i)*x(i)]   =e= Z  ;
+  19   
+  20  positive variables
+  21  x(i)     variables
+  22  ;
+  23   
+  24  variables
+  25  Z      FO
+  26  ;
+  27   
+  28  equations
+  29  eq_z      funcion objetivo master
+  30  eq_r1(m)  ecuaciones
+  31  ;
   32   
-  33  eq_r1(m)..       sum[i, A(m,i)*x(i)] =g= B(m);
+  33  eq_z..           sum[i, c(i)*x(i)]   =e= Z  ;
   34   
-  35   
-  36  model multibenders /all/
+  35  eq_r1(m)..       sum[i, A(m,i)*x(i)] =g= bmult*B(m);
+  36   
   37   
-  38  solve multibenders using LP minimizing Z;
+  38  model multibenders /all/
   39   
   40   
-GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/11/23 11:54:52 Page 2
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 04/17/23 16:31:27 Page 2
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 Include File Summary
 
 
    SEQ   GLOBAL TYPE      PARENT   LOCAL  FILENAME
 
-     1        1 INPUT          0       0  /home/daniel/Documents/tesis_maestria/_gams_py_gjo1.gms
-     2       14 GDXIN          1      14  /home/daniel/Documents/tesis_maestria/tdata.gdx
+     1        1 INPUT          0       0  C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\_gams_py_gjo1.gms
+     2       16 GDXIN          1      16  C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\tdata.gdx
 
 
-COMPILATION TIME     =        0.001 SECONDS      3 MB  42.5.0 cf11b917 LEX-LEG
-GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/11/23 11:54:52 Page 3
+COMPILATION TIME     =        0.016 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 04/17/23 16:31:27 Page 3
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
-Equation Listing    SOLVE multibenders Using LP From line 38
+E x e c u t i o n
 
 
----- eq_z  =E=  funcion objetivo master
-
-eq_z..  184*x(i1) + 642*x(i2) + 312*x(i3) + 304*x(i4) + 472*x(i5) + 305*x(i6) + 531*x(i7) + 805*x(i8) + 516*x(i9) + 344*x(i10) + 740*x(i11) + 764*x(i12) + 386*x(i13) - Z =E= 0 ; (LHS = 0)
-     
-
----- eq_r1  =G=  ecuaciones
-
-eq_r1(m1)..  28*x(i1) + 38*x(i2) + 12*x(i3) =G= 2105 ; (LHS = 0, INFES = 2105 ****)
-     
-eq_r1(m2)..  18*x(i1) + 82*x(i2) + 15*x(i3) =G= 2453 ; (LHS = 0, INFES = 2453 ****)
-     
-eq_r1(m3)..  - 4*x(i1) - 2*x(i2) - 6*x(i3) + 61*x(i4) + 74*x(i5) =G= 4916 ; (LHS = 0, INFES = 4916 ****)
-     
-REMAINING 14 ENTRIES SKIPPED
-
-GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/11/23 11:54:52 Page 4
-G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
-Column Listing      SOLVE multibenders Using LP From line 38
+EXECUTION TIME       =        0.000 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
 
 
----- x  variables
-
-x(i1)
-                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
-      184       eq_z
-       28       eq_r1(m1)
-       18       eq_r1(m2)
-       -4       eq_r1(m3)
-       -1       eq_r1(m4)
-       -7       eq_r1(m5)
-       -2       eq_r1(m6)
-
-x(i2)
-                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
-      642       eq_z
-       38       eq_r1(m1)
-       82       eq_r1(m2)
-       -2       eq_r1(m3)
-       -2       eq_r1(m4)
-       -4       eq_r1(m5)
-       -3       eq_r1(m6)
-
-x(i3)
-                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
-      312       eq_z
-       12       eq_r1(m1)
-       15       eq_r1(m2)
-       -6       eq_r1(m3)
-       -5       eq_r1(m4)
-       -4       eq_r1(m5)
-       -1       eq_r1(m6)
-
-REMAINING 10 ENTRIES SKIPPED
-
----- Z  FO
-
-Z
-                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
-       -1       eq_z
-
-GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/11/23 11:54:52 Page 5
-G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
-Model Statistics    SOLVE multibenders Using LP From line 38
-
-
-MODEL STATISTICS
-
-BLOCKS OF EQUATIONS           2     SINGLE EQUATIONS           18
-BLOCKS OF VARIABLES           2     SINGLE VARIABLES           14
-NON ZERO ELEMENTS            93
-
-
-GENERATION TIME      =        0.003 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
-GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/11/23 11:54:52 Page 6
-G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
-Solution Report     SOLVE multibenders Using LP From line 38
-
-
-               S O L V E      S U M M A R Y
-
-     MODEL   multibenders        OBJECTIVE  Z
-     TYPE    LP                  DIRECTION  MINIMIZE
-     SOLVER  XPRESS              FROM LINE  38
-
-**** SOLVER STATUS     1 Normal Completion
-**** MODEL STATUS      1 Optimal
-**** OBJECTIVE VALUE           157952.3144
-
- RESOURCE USAGE, LIMIT          0.011 10000000000.000
- ITERATION COUNT, LIMIT         8    2147483647
-
-FICO-Xpress      42.5.0 cf11b917 Mar 30, 2023          LEG x86 64bit/Linux    
-
-*** This solver runs with a demo license. No commercial use.
-Xpress Optimizer 41.01
-Xpress Solver 64bit v9.0.0 Oct 17 2022
---- GMO setup time: 0.00s
-optimal LP solution found: objective value 157952.314406
-
-                           LOWER          LEVEL          UPPER         MARGINAL
-
----- EQU eq_z                .              .              .            -1.0000      
-
-  eq_z  funcion objetivo master
-
----- EQU eq_r1  ecuaciones
-
-           LOWER          LEVEL          UPPER         MARGINAL
-
-m1       2105.0000      2105.0000        +INF            2.5345      
-m2       2453.0000      2453.0000        +INF            6.9483      
-m3       4916.0000      5156.0817        +INF             .          
-m4       2564.0000      2564.0000        +INF           12.0350      
-m5       1969.0000      3997.9148        +INF             .          
-m6       1060.0000      7975.3260        +INF             .          
-m7       3951.0000      4647.2403        +INF             .          
-m8       1383.0000      4302.6820        +INF             .          
-m9       2783.0000      2783.0000        +INF            8.1499      
-m10      2667.0000      2667.0000        +INF           17.9055      
-m11      3791.0000      3968.3241        +INF             .          
-m12      1039.0000      8665.2468        +INF             .          
-m13      4756.0000      4756.0000        +INF            1.2030      
-m14      2782.0000      2782.0000        +INF           10.2655      
-m15      2725.0000      2817.6260        +INF             .          
-m16      3235.0000      5226.7393        +INF             .          
-m17      3436.0000      4587.3918        +INF             .          
-
----- VAR x  variables
-
-           LOWER          LEVEL          UPPER         MARGINAL
-
-i1           .            49.2531        +INF             .          
-i2           .            19.1030        +INF             .          
-i3           .              .            +INF          237.5367      
-i4           .            88.3820        +INF             .          
-i5           .              .            +INF           47.6502      
-i6           .            61.8486        +INF             .          
-i7           .              .            +INF          444.4415      
-i8           .              .            +INF          496.7885      
-i9           .              .            +INF          338.3080      
-i10          .           131.7412        +INF             .          
-i11          .            54.1227        +INF             .          
-i12          .              .            +INF          196.6693      
-i13          .            14.3107        +INF             .          
-
-                           LOWER          LEVEL          UPPER         MARGINAL
-
----- VAR Z                 -INF       157952.3144        +INF             .          
-
-  Z  FO
-
-
-**** REPORT SUMMARY :        0     NONOPT
-                             0 INFEASIBLE
-                             0  UNBOUNDED
-
-
-EXECUTION TIME       =        0.027 SECONDS      4 MB  42.5.0 cf11b917 LEX-LEG
-
-
-USER: GAMS Demo license for Daniel Jimenez           G230406|0002CO-GEN
-      Universidad Nacional de Ingenieria, Peru                 DL089513
+USER: Small MUD - 5 User License                     G220908|0002CO-WIN
+      ENGIE Energia Peru S.A., Gerencia Comercial y de RegulacioDC13552
 
 
 **** FILE SUMMARY
 
-Input      /home/daniel/Documents/tesis_maestria/_gams_py_gjo1.gms
-Output     /home/daniel/Documents/tesis_maestria/_gams_py_gjo1.lst
+Input      C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\_gams_py_gjo1.gms
+Output     C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\_gams_py_gjo1.lst
+Save       C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\_gams_py_gcp0.g00
+
+**** WARNING - COMPILER OPTIONS ARE NON DEFAULT     ONEMPTY

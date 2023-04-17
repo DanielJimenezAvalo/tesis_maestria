@@ -1,4 +1,4 @@
-GAMS 42.5.0  cf11b917 Mar 30, 2023          LEX-LEG x86 64bit/Linux - 04/11/23 11:54:52 Page 1
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 04/17/23 16:31:27 Page 1
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 C o m p i l a t i o n
 
@@ -74,17 +74,17 @@ C o m p i l a t i o n
   69   
 
 
-COMPILATION TIME     =        0.001 SECONDS      3 MB  42.5.0 cf11b917 LEX-LEG
+COMPILATION TIME     =        0.000 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
 
 
-EXECUTION TIME       =        0.000 SECONDS      3 MB  42.5.0 cf11b917 LEX-LEG
+EXECUTION TIME       =        0.000 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
 
 
-USER: GAMS Demo license for Daniel Jimenez           G230406|0002CO-GEN
-      Universidad Nacional de Ingenieria, Peru                 DL089513
+USER: Small MUD - 5 User License                     G220908|0002CO-WIN
+      ENGIE Energia Peru S.A., Gerencia Comercial y de RegulacioDC13552
 
 
 **** FILE SUMMARY
 
-Input      /home/daniel/Documents/tesis_maestria/_gams_py_gjo0.gms
-Output     /home/daniel/Documents/tesis_maestria/_gams_py_gjo0.lst
+Input      C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\_gams_py_gjo0.gms
+Output     C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\_gams_py_gjo0.lst

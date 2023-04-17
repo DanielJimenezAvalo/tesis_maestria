@@ -2,6 +2,7 @@ from gams import GamsWorkspace
 import os
 import sys
 from pprint import pprint
+import pkg
 
 def get_model_text():
     return '''
@@ -11,14 +12,14 @@ sets
     ;
 
     parameters
-    C(i)     coeficientes FO 
-    B(m)     cotas restricciones
-    A(m,i)    coeficientes restricciones master    
+    c(i)     coeficientes FO 
+    b(m)     cotas restricciones
+    a(m,i)    coeficientes restricciones master    
     ;
     
 $if not set gdxincname $abort 'no include file name for data file provided'
 $gdxin %gdxincname%
-$load i m C B A
+$load i m c b a
 $gdxin
 
 positive variables
@@ -52,23 +53,11 @@ if __name__ == "__main__":
     else:
         ws = GamsWorkspace('.')
         
-    '''  
-    plants   = [ "Seattle", "San-Diego" ]
-    markets  = [ "New-York", "Chicago", "Topeka" ]
-    capacity = { "Seattle": 350.0, "San-Diego": 600.0 } 
-    demand   = { "New-York": 325.0, "Chicago": 300.0, "Topeka": 275.0 }
-    distance = { ("Seattle",   "New-York") : 2.5,
-                 ("Seattle",   "Chicago")  : 1.7,
-                 ("Seattle",   "Topeka")   : 1.8,
-                 ("San-Diego", "New-York") : 2.5,
-                 ("San-Diego", "Chicago")  : 1.8,
-                 ("San-Diego", "Topeka")   : 1.4
-               }
-    '''
     i_p=['i1','i2','i3','i4','i5','i6','i7','i8','i9','i10','i11','i12','i13']
+
     m_p=['m1','m2','m3','m4','m5','m6','m7','m8','m9','m10','m11','m12','m13','m14','m15','m16','m17']
     
-    C_p = {
+    c_p = {
     'i1':     184,
     'i2':     642,
     'i3':     312,
@@ -84,7 +73,7 @@ if __name__ == "__main__":
     'i13':      386
     }
     
-    B_p = {
+    b_p = {
     'm1':        2105,
     'm2':        2453,
     'm3':        4916,
@@ -104,7 +93,7 @@ if __name__ == "__main__":
     'm17':        3436
     }
         
-    A_p = {
+    a_p = {
     ('m1','i1'):	28,
     ('m2','i1'):	18,
     ('m3','i1'):	-4,
@@ -340,17 +329,17 @@ if __name__ == "__main__":
     for p in m_p:
         m.add_record(p)
         
-    C = db.add_parameter_dc("C", [i], "capacity of plant i in cases")
+    c = db.add_parameter_dc("c", [i], "capacity of plant i in cases")
     for p in i_p:
-        C.add_record(p).value = C[p]
+        c.add_record(p).value = c_p[p]
 
-    B = db.add_parameter_dc("B", [m], "demand at market j in cases")
+    b = db.add_parameter_dc("b", [m], "demand at market j in cases")
     for p in m_p:
-        B.add_record(p).value = B[p]
+        b.add_record(p).value = b_p[p]
     
-    A = db.add_parameter_dc("A", [i,m], "distance in thousands of miles")
-    for p, q in iter(A_p.items()):
-        A.add_record(q).value = p
+    a = db.add_parameter_dc("a", [m,i], "distance in thousands of miles")
+    for p, q in iter(a_p.items()):
+        a.add_record(p).value = q
     '''
     f = db.add_parameter("f", 0, "freight in dollars per case per thousand miles")
     f.add_record().value = 90
@@ -362,6 +351,10 @@ if __name__ == "__main__":
     opt.all_model_types = "cplex"
 
     t4.run(opt, databases = db)
-    for rec in t4.out_db["x"]:
-        print("x(" + rec.key(0) + "," + rec.key(1) + "): level=" + str(rec.level) + " marginal=" + str(rec.marginal))
+    
+    job=pkg.export_df_api_python.create_inform_df(t4)
+    job.print_get_varible('x')
+    job.print_get_equation('eq_r1')
+    job.print_get_varible('Z')
+    job.print_get_equation('eq_z')
     
