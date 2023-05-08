@@ -1,51 +1,143 @@
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 04/17/23 16:31:27 Page 1
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/06/23 19:56:49 Page 1
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 C o m p i l a t i o n
 
 
    1   
    2  sets
-   3      i        variables master
-   4      m        restricciones
-   5      ;
-   6   
-   7      parameters
-   8      C(i)     coeficientes FO
-   9      B(m)     cotas restricciones
-  10      A(m,i)    coeficientes restricciones master
-  11      ;
-  12   
-  13  Scalar bmult  demand multiplier /1/;
-  14   
+   3  t        periodos
+   4  r        rows
+   5  s        stages
+   6  snt     forward o backward
+   7  iter    iteration index
+   8   
+   9  MAPSP(s,t)
+  10  MAPSrow(s,r)
+  11   
+  12  ;
+  13   
+  14  alias(t,t1,t2,t3);
+  15  alias(r,r1,r2,r3);
+  16  alias(s,s1,s2,s3,s4)
+  17  alias(iter,iter_1,iter_2);
+  18   
+  19  parameters
+  20  c(s,t)     coeficientes FO
+  21  b(s,r)     cotas restricciones
+  22  A(s,r,s,t)    coeficientes restricciones master
+  23  ;
+  24   
+  25  parameters
+  26  k valor de periodo
+  27  iteracion valor de iteracion
+  28  TOL tolerancia
+  29  parametro_benders parametro
+  30  dispb          parametro de desplazamiento
+  31  x_k(s,t)           variable perido previo
+  32  x_k_b(s,t)         variable perido previo
+  33  x_k_m(s,t)         variable perido previo
+  34  x_k_m_f(s,t)       variable perido previo
+  35  Z_k(s)           fo periodo previo
+  36  theta_k(s)       funcion recursiva
+  37  pi_k(s,r)          marginal de ecuacion
+  38  deltha_k(s)      factibilidad (0 0 1)
+  39  x_kk(iter,s,t)     variable perido previo
+  40  x_kk_b(iter,s,t)   variable perido previo
+  41  x_kk_m(iter,s,t)   variable perido previo
+  42  x_kk_m_f(iter,s,t) variable perido previo
+  43  Z_kk(iter,s)     fo periodo previo
+  44  Z_kk_b(iter,s)           fo periodo previo
+  45  theta_kk(iter,s)       funcion recursiva
+  46  alpha_kk(iter,s)       funcion recursiva
+  47  alpha_b_kk(iter,s)       funcion recursiva
+  48  pi_kk(iter,s,r)          marginal de ecuacion
+  49  pi_kk_f(iter,s,r)          marginal de ecuacion
+  50  mu_kk(iter,s)        dual del corte
+  51  betha_kk(iter,s)     cota del corte
+  52  deltha_kk(iter,s)        factibilidad (0 0 1)
+  53  Z_inferior(iter)    cota inferior
+  54  Z_inferior_1(iter)    cota inferior
+  55  Z_inferior_2(iter)    cota inferior
+  56  Z_inferior_3(iter)    cota inferior
+  57  Z_superior(iter)    cota superior
+  58  Z_inf    cota inferior
+  59  Z_sup    cota superior
+  60  GAP(iter) diferencias entre cotas
+  61  ;
+  62   
 GDXIN   C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\tdata.gdx
---- LOAD  i = 1:i
---- LOAD  m = 2:m
---- LOAD  C = 3:C
---- LOAD  B = 4:B
---- LOAD  A = 5:A
-  19   
-  20  positive variables
-  21  x(i)     variables
-  22  ;
-  23   
-  24  variables
-  25  Z      FO
-  26  ;
-  27   
-  28  equations
-  29  eq_z      funcion objetivo master
-  30  eq_r1(m)  ecuaciones
-  31  ;
-  32   
-  33  eq_z..           sum[i, c(i)*x(i)]   =e= Z  ;
-  34   
-  35  eq_r1(m)..       sum[i, A(m,i)*x(i)] =g= bmult*B(m);
-  36   
-  37   
-  38  model multibenders /all/
-  39   
-  40   
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 04/17/23 16:31:27 Page 2
+--- LOAD  t = 1:t
+--- LOAD  r = 2:r
+--- LOAD  s = 3:s
+--- LOAD  MAPSP = 4:MAPSP
+--- LOAD  MAPSrow = 5:MAPSrow
+--- LOAD  c = 6:c
+--- LOAD  b = 7:b
+--- LOAD  A = 8:A
+  67   
+  68  positive variables
+  69  x(s,t)     variables
+  70  ;
+  71   
+  72  variables
+  73  Z      FO
+  74  alpha(s)    recursiva
+  75  ;
+  76   
+  77  equations
+  78  eq_z1            funcion objetivo master primera iteracion benders
+  79  eq_zk            funcion objetivo master j iteracion benders
+  80  eq_zk1            funcion objetivo master j iteracion benders
+  81  eq_r1(s,r)         ecuaciones
+  82  eq_rk(iter,s,r)         ecuaciones
+  83  eq_rkb(iter,s)        ecuaciones
+  84  eq_rkf(iter,s)        ecuaciones
+  85  ;
+  86   
+  87  eq_z1..  sum[(s1,t1)$[ord(s1)=1],c(s1,t1)*x(s1,t1)]   =e= Z  ;
+  88   
+  89  eq_zk1.. sum[(s1,t1)$[ord(s1)=k],c(s1,t1)*x(s1,t1)]   =e= Z  ;
+  90   
+  91  eq_zk..  sum[(s1,t1)$[ord(s1)=k],c(s1,t1)*x(s1,t1)] + sum[s1$[ord(s1)=k],alpha(s1)]  =e= Z  ;
+  92   
+  93  eq_r1(s2,r2)$[ord(s2)=k]..   sum[(s1,t1)$[MAPSP(s1,t1) and (ord(s1)=1)],A(s2,r2,s1,t1)*x(s1,t1)] =g= b(s2,r2);
+  94   
+  95  eq_rk(iter_1,s2,r2)${[ord(s2)=k] and
+  96                       [ord(iter_1) = iteracion   ]}..    sum[(s1,t1)$[MAPSP(s1,t1) and
+  97                                                                           (ord(s1)=k)      ],A(s2,r2,s1,t1)*x(s1,t1)]
+  98                                                             =g=
+  99                                                             b(s2,r2)
+ 100                                                             -sum[(s1,t1)$[MAPSP(s1,t1) and
+ 101                                                                           (ord(s1)=k-1)    ],A(s2,r2,s1,t1)*x_kk(iter_1,s1,t1)]
+ 102                                                             ;
+ 103   
+ 104  eq_rkf(iter_1,s2)$[(ord(s2)=k) and
+ 105                     (ord(iter_1)= iteracion-1 )]..    sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
+ 106                                                       =g=
+ 107                                                       sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
+ 108                                                                      (ord(s1)=k+1)   and
+ 109                                                                       MAPSP(s2,t2)   and
+ 110                                                                      (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
+ 111                                                       ;
+ 112   
+ 113  eq_rkb(iter_1,s2)$[(ord(s2)=k) and
+ 114                     (ord(iter_1)= iteracion   )]..     sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
+ 115                                                       =g=
+ 116                                                       sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
+ 117                                                                      (ord(s1)=k+1)   and
+ 118                                                                       MAPSP(s2,t2)   and
+ 119                                                                      (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
+ 120                                                       ;
+ 121   
+ 122  model multibenders1  /eq_z1, eq_r1/ ;
+ 123  model multibenders2a /eq_zk1, eq_rk/ ;
+ 124  model multibenders2  /eq_zk, eq_rk/ ;
+ 125  model multibenders3  /eq_zk, eq_r1, eq_rkf/ ;
+ 126  model multibenders4a /eq_zk, eq_rk, eq_rkf/ ;
+ 127  model multibenders4  /eq_zk, eq_rk, eq_rkb/ ;
+ 128   
+ 129   
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/06/23 19:56:49 Page 2
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 Include File Summary
 
@@ -53,11 +145,11 @@ Include File Summary
    SEQ   GLOBAL TYPE      PARENT   LOCAL  FILENAME
 
      1        1 INPUT          0       0  C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\_gams_py_gjo1.gms
-     2       16 GDXIN          1      16  C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\tdata.gdx
+     2       64 GDXIN          1      64  C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\tdata.gdx
 
 
-COMPILATION TIME     =        0.016 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 04/17/23 16:31:27 Page 3
+COMPILATION TIME     =        0.015 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/06/23 19:56:49 Page 3
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 E x e c u t i o n
 

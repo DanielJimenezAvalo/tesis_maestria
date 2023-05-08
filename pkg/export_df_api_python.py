@@ -2,6 +2,7 @@ import os
 import sys
 import shutil
 import time
+import json
 from gams import GamsWorkspace
 
 class create_inform_df():
@@ -13,7 +14,7 @@ class create_inform_df():
 
         print('························')
         print(f"{self.runmodel}.out_db.get_variable('{variable}')")
-        print(self.runmodel.out_db.get_variable(f'{variable}').__len__(),"\n")
+        #print(self.runmodel.out_db.get_variable(f'{variable}').__len__(),"\n")
         
         if self.runmodel.out_db.get_variable(f'{variable}').__len__() > 1:
             self.dict_output={}
@@ -22,13 +23,13 @@ class create_inform_df():
                 for rec in self.runmodel.out_db.get_variable(f'{variable}'):
                     match criteria:
                         case 'level':
-                            self.dict_output[criteria][rec.key(0)]= str(rec.level)
+                            self.dict_output[criteria][tuple(rec.keys)]= str(rec.level)
                         case 'marginal':
-                            self.dict_output[criteria][rec.key(0)]= str(rec.marginal)
+                            self.dict_output[criteria][tuple(rec.keys)]= str(rec.marginal)
                         case 'upper':
-                            self.dict_output[criteria][rec.key(0)]= str(rec.upper)
+                            self.dict_output[criteria][tuple(rec.keys)]= str(rec.upper)
                         case 'lower':
-                            self.dict_output[criteria][rec.key(0)]= str(rec.lower)
+                            self.dict_output[criteria][tuple(rec.keys)]= str(rec.lower)
         
         else:
             self.dict_output={}
@@ -43,13 +44,13 @@ class create_inform_df():
                     case 'lower':
                         self.dict_output[criteria]= str(self.runmodel.out_db.get_variable(variable).find_record().lower)
             
-        return print(self.dict_output)
+        return self.dict_output
 
     def print_get_equation(self,equation):
 
         print('························')
         print(f"{self.runmodel}.out_db.get_equation('{equation}')")
-        print(self.runmodel.out_db.get_equation(f'{equation}').__len__(),"\n")
+        #print(self.runmodel.out_db.get_equation(f'{equation}').__len__(),"\n")
         
         if self.runmodel.out_db.get_equation(f'{equation}').__len__() > 1:
             self.dict_output_e={}
@@ -58,13 +59,13 @@ class create_inform_df():
                 for rec in self.runmodel.out_db.get_equation(f'{equation}'):
                     match criteria:
                         case 'level':
-                            self.dict_output_e[criteria][rec.key(0)]= str(rec.level)
+                            self.dict_output_e[criteria][tuple(rec.keys)]= str(rec.level)
                         case 'marginal':
-                            self.dict_output_e[criteria][rec.key(0)]= str(rec.marginal)
+                            self.dict_output_e[criteria][tuple(rec.keys)]= str(rec.marginal)
                         case 'upper':
-                            self.dict_output_e[criteria][rec.key(0)]= str(rec.upper)
+                            self.dict_output_e[criteria][tuple(rec.keys)]= str(rec.upper)
                         case 'lower':
-                            self.dict_output_e[criteria][rec.key(0)]= str(rec.lower)
+                            self.dict_output_e[criteria][tuple(rec.keys)]= str(rec.lower)
 
         else:
             self.dict_output_e={}
@@ -79,7 +80,7 @@ class create_inform_df():
                     case 'lower':
                         self.dict_output_e[criteria]= str(self.runmodel.out_db.get_equation(equation).find_record().lower)
 
-        return print(self.dict_output_e)
+        return self.dict_output_e
         
         
 

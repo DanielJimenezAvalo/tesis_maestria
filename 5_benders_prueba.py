@@ -128,7 +128,8 @@ if __name__ == "__main__":
     #call of data and creation of gdx file
     t5 = ws.add_job_from_string(get_data_text())
     t5.run()
-    t5.out_db.export(os.path.join(ws.working_directory, "tdata.gdx"))
+    #t5.out_db.export(os.path.join(ws.working_directory, "tdata.gdx"))
+    t5.out_db.export("./tdata.gdx")
     #complete the model
     t5 = ws.add_job_from_string(get_model_text())
     #insert gdx file as an option
@@ -142,16 +143,20 @@ if __name__ == "__main__":
     t5.run(gams_options=opt,checkpoint=cp)
 
     bmultlist = [ 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3 ]
+    #bmultlist = [ 0.6, 0.7]
 
     # create a new GAMSJob that is initialized from the GAMSCheckpoint
     for b in bmultlist:
-        t5 = ws.add_job_from_string("bmult=" + str(b) + "; solve multibenders using LP minimizing Z;", cp)
+        t5 = ws.add_job_from_string(gams_source="bmult=" + str(b) + "; solve multibenders using LP minimizing Z;", checkpoint=cp)
         t5.run(gams_options=opt)
         #t5.run(gams_options=opt,checkpoint=cp)
+        print("********************************************")
         print("Scenario bmult=" + str(b) + ":")
+        print("********************************************")
 
         job=pkg.export_df_api_python.create_inform_df(t5)
         job.print_get_varible('x')
         job.print_get_equation('eq_r1')
         job.print_get_varible('Z')
-        job.print_get_equation('eq_z')
+        job.print_get_equation('eq_z')   
+        print("\n")     

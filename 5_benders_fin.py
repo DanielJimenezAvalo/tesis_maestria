@@ -1,23 +1,14 @@
-*modelado de algoritmos de descomposicion con GAMS
-*descomposicion de benders multietapa
-*27 de enero de 2016
-*Ing. Daniel Jimenez
-*  min z = 8x1+10x2+12x3+16x4
-*          2x1                   = 50
-*        +12x1+15x2              = 60
-*              13x2+9x3          = 70
-*                  +3x3+32x4     = 80
+from gams import GamsWorkspace
+import os
+import sys
+import pkg
 
-*$INCLUDE ./input.DAT
-*$INCLUDE ./original.txt
-Option Limrow=17;
-
+def get_data_text():
+    return '''
 sets
 t        periodos   /1*13/
 r        rows       /1*17/
 s        stages     /1*5/
-
-
 
 MAPSP(s,t)   map stage y periods     /
  1.1
@@ -55,8 +46,6 @@ MAPSrow(s,r)  map stage y periods   /
 5.17
 /
 ;
-
-alias(s,ss);
 
 parameters
 c(s,t)     coeficientes FO  /
@@ -98,7 +87,6 @@ b(s,r)     cotas restricciones   /
 /
 ;
 
-
 table A(s,r,s,t)     coeficientes restricciones master
            1.1       1.2       1.3       2.4       2.5       3.6       3.7       3.8       3.9      4.10      5.11      5.12      5.13
  1.1        28        38        12         0         0         0         0         0         0         0         0         0         0
@@ -120,6 +108,36 @@ table A(s,r,s,t)     coeficientes restricciones master
 5.17         0         0         0         0         0         0         0         0         0        -3        68        32        91
 ;
 
+    '''
+    
+
+def get_model_text():
+    return '''
+sets
+t        periodos   
+r        rows       
+s        stages     
+
+MAPSP(s,t)
+MAPSrow(s,r)
+
+;
+
+alias(s,ss);
+
+parameters
+c(s,t)     coeficientes FO 
+b(s,r)     cotas restricciones
+A(s,r,s,t)    coeficientes restricciones master    
+;
+
+Scalar bmult  demand multiplier /1/;  
+
+$if not set gdxincname $abort 'no include file name for data file provided'
+$gdxin %gdxincname%
+$load t r s MAPSP MAPSrow c b A
+$gdxin
+
 positive variables
 x(s,t)     variables
 ;
@@ -136,11 +154,53 @@ eq_rk(s,r)  ecuaciones
 
 eq_z..          sum[(s,t),c(s,t)*x(s,t)]   =e= Z  ;
 
-eq_rk(s,r)..    sum[(ss,t)$MAPSP(ss,t),A(s,r,ss,t)*x(ss,t)]=g= b(s,r) ;
+eq_rk(s,r)..    sum[(ss,t)$MAPSP(ss,t),A(s,r,ss,t)*x(ss,t)]=g= bmult*b(s,r) ;
 
 
 model multibenders /all/
 
-solve multibenders using LP minimizing Z;
+    '''
 
-execute_unload 'data_final.gdx';
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        ws = GamsWorkspace(system_directory = sys.argv[1])
+    else:
+        ws = GamsWorkspace('.')
+
+    
+    #call of data and creation of gdx file
+    t5 = ws.add_job_from_string(get_data_text())
+    t5.run()
+    #t5.out_db.export(os.path.join(ws.working_directory, "tdata.gdx"))
+    t5.out_db.export("./tdata.gdx")
+    #complete the model
+    t5 = ws.add_job_from_string(get_model_text())
+    #insert gdx file as an option
+    opt = ws.add_options()
+    opt.defines["gdxincname"] = "tdata.gdx"
+    opt.all_model_types = "cplex"
+
+    # initialize a GAMSCheckpoint by running a GAMSJob
+    cp = ws.add_checkpoint()
+
+    t5.run(gams_options=opt,checkpoint=cp)
+
+    #bmultlist = [ 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3 ]
+    bmultlist = [ 0.8, 1.0, 1.2]
+
+    # create a new GAMSJob that is initialized from the GAMSCheckpoint
+    for b in bmultlist:
+        t5 = ws.add_job_from_string(gams_source="bmult=" + str(b) + "; solve multibenders using LP minimizing Z;", checkpoint=cp)
+        t5.run(gams_options=opt)
+        #t5.run(gams_options=opt,checkpoint=cp)
+        print("********************************************")
+        print("Scenario bmult=" + str(b) + ":")
+        print("********************************************")
+
+        job=pkg.export_df_api_python.create_inform_df(t5)
+        job.print_get_varible('x')
+        job.print_get_equation('eq_rk')
+        job.print_get_varible('Z')
+        job.print_get_equation('eq_z')   
+        print("\n") 

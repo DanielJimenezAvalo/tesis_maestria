@@ -183,3 +183,6 @@ gams.bak/
 *.gsp
 *.lst
 _gams*
+*.lxi
+*.log~*
+

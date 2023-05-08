@@ -1,1 +1,15 @@
 B 3 C o m p i l a t i o n
+B 163 Equation Listing    SOLVE multibenders Using LP From line 150
+D 166 eq_z
+D 171 eq_rk
+B 209 Column Listing      SOLVE multibenders Using LP From line 150
+E 212 x
+E 246 Z
+B 254 Range Statistics    SOLVE multibenders Using LP From line 150
+B 265 Model Statistics    SOLVE multibenders Using LP From line 150
+B 278 Solution Report     SOLVE multibenders Using LP From line 150
+F 311 eq_z
+F 315 eq_rk
+G 337 x
+G 357 Z
+B 367 E x e c u t i o n

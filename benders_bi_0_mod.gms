@@ -2,12 +2,12 @@
 *descomposicion de benders multietapa
 *24 de setiembre de 2018
 *Ing. Daniel Jimenez
-
+Option Limrow=17;
 
 sets
 t        periodos  /1*13/
 r        rows  /1*17/
-s        stages  /1*5/
+s        stages  /1*2/
 ss(s)    subconjunto dinamico
 kk(s)    subconjunto dinamico 2
 ssb(s)    subconjunto dinamico
@@ -22,14 +22,6 @@ MAPSP(s,t)   map stage y periods     /
  1.3
  2.4
  2.5
- 3.6
- 3.7
- 3.8
- 3.9
-4.10
-5.11
-5.12
-5.13
 /
 
 MAPSrow(s,r)  map stage y periods   /
@@ -39,17 +31,6 @@ MAPSrow(s,r)  map stage y periods   /
  2.4
  2.5
  2.6
- 3.7
- 3.8
- 3.9
-4.10
-4.11
-4.12
-5.13
-5.14
-5.15
-5.16
-5.17
 /
 
 ;
@@ -66,14 +47,6 @@ c(s,t)     coeficientes FO  /
  1.3        312
  2.4        304
  2.5        472
- 3.6        305
- 3.7        531
- 3.8        805
- 3.9        516
-4.10        344
-5.11        740
-5.12        764
-5.13        386
 /
 
 ;
@@ -87,41 +60,19 @@ b(s,r)     cotas restricciones   /
  2.4        2564
  2.5        1969
  2.6        1060
- 3.7        3951
- 3.8        1383
- 3.9        2783
-4.10        2667
-4.11        3791
-4.12        1039
-5.13        4756
-5.14        2782
-5.15        2725
-5.16        3235
-5.17        3436
 /
 
 ;
 
 
 table A(s,r,s,t)     coeficientes restricciones master
-           1.1       1.2       1.3       2.4       2.5       3.6       3.7       3.8       3.9      4.10      5.11      5.12      5.13
- 1.1        28        38        12         0         0         0         0         0         0         0         0         0         0
- 1.2        18        82        15         0         0         0         0         0         0         0         0         0         0
- 2.3        -4        -2        -6        61        74         0         0         0         0         0         0         0         0
- 2.4        -1        -2        -5        30        40         0         0         0         0         0         0         0         0
- 2.5        -7        -4        -4        50        95         0         0         0         0         0         0         0         0
- 2.6        -2        -3        -1        92        70         0         0         0         0         0         0         0         0
- 3.7         0         0         0        -9        -7        88        48        26        21         0         0         0         0
- 3.8         0         0         0        -8        -9        81        19        95        70         0         0         0         0
- 3.9         0         0         0        -7        -7        55        26        51        24         0         0         0         0
-4.10         0         0         0         0         0        -8        -7        -6        -1        24         0         0         0
-4.11         0         0         0         0         0        -4        -4        -7        -3        32         0         0         0
-4.12         0         0         0         0         0        -9        -6        -6        -8        70         0         0         0
-5.13         0         0         0         0         0         0         0         0         0        -3        69        62        99
-5.14         0         0         0         0         0         0         0         0         0        -8        64        48        26
-5.15         0         0         0         0         0         0         0         0         0        -5        60        28        16
-5.16         0         0         0         0         0         0         0         0         0        -6        85        57        99
-5.17         0         0         0         0         0         0         0         0         0        -3        68        32        91
+           1.1       1.2       1.3       2.4       2.5      
+ 1.1        28        38        12         0         0        
+ 1.2        18        82        15         0         0        
+ 2.3        -4        -2        -6        61        74       
+ 2.4        -1        -2        -5        30        40        
+ 2.5        -7        -4        -4        50        95         
+ 2.6        -2        -3        -1        92        70         
 
 ;
 
@@ -136,18 +87,13 @@ Z        FO
 alpha(s)    recursiva
 ;
 
-scalar
+parameters
 k valor de periodo /1/
 iteracion valor de iteracion /1/
 TOL tolerancia /0.001/
 *parametro_benders parametro /0.46496/
 *parametro_benders parametro /2.1507/
 parametro_benders parametro /0.000001/
-
-;
-
-parameters
-
 dispb          parametro de desplazamiento
 
 x_k(s,t)           variable perido previo
@@ -274,7 +220,7 @@ loop{iter${ABS(1-Z_inf/Z_sup) > TOL},
 *                                                multibenders1.savepoint=2;
                                                 solve multibenders1 using LP minimizing Z;
                                                 
-                                                execute_unload 'data_daniel.gdx';
+*                                                execute_unload 'data_daniel.gdx';
                                                                                                 
 
                                                  x_kk(dyniter,ss,t)=x.l(ss,t);
