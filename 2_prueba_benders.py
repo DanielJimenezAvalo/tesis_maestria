@@ -332,34 +332,55 @@ if __name__ == "__main__":
                             s_mapsp.append(str(m.key(0)))
                             t_mapsp.append(str(m.key(1)))
 
-                    for s,t in list(zip(s_mapsp,t_mapsp)):
-                        print(dict_variable['level'][(s, t)])
+                    for m,n in list(zip(s_mapsp,t_mapsp)):
+                        print(dict_variable['level'][(m, n)])
 
                     # x_kk(iter_1,s2,t2)
                     m = gt.Container()
-                    print(type(m))
+                    #print(type(m))
 
-                    x_kk=gt.Parameter(m,"x_kk",[s,t])
-                    print(list(dict_variable['level'].keys()))
-                    print(list(dict_variable['level'].values()))
-                    print(list(dict_variable['level'].items()))
+                    for iter_d,s,t in list(zip([str(iter)]*len(t_mapsp),s_mapsp,t_mapsp)):
+                        print(iter_d,s,t)
+
+                    x_kk=gt.Parameter(m,"x_kk",[iter_d,s,t])
+                    #print(list(dict_variable['level'].keys()))
+                    #print(list(dict_variable['level'].values()))
+                    #print(list(dict_variable['level'].items()))
 
                     list_keys_0=[list(dict_variable['level'].keys())[i][0] for i in range(len(list(dict_variable['level'].keys())))]
                     list_keys_1=[list(dict_variable['level'].keys())[i][1] for i in range(len(list(dict_variable['level'].keys())))]
                     list_values=[list(dict_variable['level'].values())[i] for i in range(len(list(dict_variable['level'].keys())))]
+                    list_iter=[str(iter)]*len(list_keys_0)
                     
-                    print(list(zip(list_keys_0,list_keys_1,list_values)))
+                    #print(list(zip(list_iter,list_keys_0,list_keys_1,list_values)))
 
-                    array_xkk=list(zip(list_keys_0,list_keys_1,list_values))
+                    array_xkk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
+
+                    print(array_xkk)
 
                     x_kk.setRecords(array_xkk)
 
+                    #iter_d=list(str(iter))
+
+                    array_zkk=[(str(iter_d),str(dict_fo['level']))]
+
+                    #array_zkk=[str(dict_fo['level'])]
+
+                    #array_zkk=[str(iter_d)]
+
+                    print(array_zkk)
+                    
+                    z_kk=gt.Parameter(m,"z_kk",[iter_d])
+
+                    #print([str(dict_fo['level'])])
+
+                    z_kk.setRecords(array_zkk)
 
                     #for t in t_mapsp:
                     #    print(dict_variable['level'][(s, t)])
                     #    x_kk.records(dict_variable['level'][(s, t)])
 
-                    print(type(x_kk))
+                    #print(type(x_kk))
 
                     m.write("./transfer.gdx")
 

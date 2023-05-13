@@ -1,116 +1,158 @@
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/06/23 19:56:48 Page 1
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/13/23 02:24:47 Page 1
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 C o m p i l a t i o n
 
 
    1   
    2  sets
-   3  t        periodos   /1*13/
-   4  r        rows       /1*17/
-   5  s        stages     /1*5/
-   6   
-   7  MAPSP(s,t)   map s y periods     /
-   8   1.1
-   9   1.2
-  10   1.3
-  11   2.4
-  12   2.5
-  13   3.6
-  14   3.7
-  15   3.8
-  16   3.9
-  17  4.10
-  18  5.11
-  19  5.12
-  20  5.13
-  21  /
-  22   
-  23  MAPSrow(s,r)  map s y periods   /
-  24   1.1
-  25   1.2
-  26   2.3
-  27   2.4
-  28   2.5
-  29   2.6
-  30   3.7
-  31   3.8
-  32   3.9
-  33  4.10
-  34  4.11
-  35  4.12
-  36  5.13
-  37  5.14
-  38  5.15
-  39  5.16
-  40  5.17
-  41  /
-  42  ;
-  43   
-  44  parameters
-  45  c(s,t)     coeficientes FO  /
-  46   1.1        184
-  47   1.2        642
-  48   1.3        312
-  49   2.4        304
-  50   2.5        472
-  51   3.6        305
-  52   3.7        531
-  53   3.8        805
-  54   3.9        516
-  55  4.10        344
-  56  5.11        740
-  57  5.12        764
-  58  5.13        386
-  59  /
-  60  ;
-  61   
-  62  parameters
-  63  b(s,r)     cotas restricciones   /
-  64   1.1        2105
-  65   1.2        2453
-  66   2.3        4916
-  67   2.4        2564
-  68   2.5        1969
-  69   2.6        1060
-  70   3.7        3951
-  71   3.8        1383
-  72   3.9        2783
-  73  4.10        2667
-  74  4.11        3791
-  75  4.12        1039
-  76  5.13        4756
-  77  5.14        2782
-  78  5.15        2725
-  79  5.16        3235
-  80  5.17        3436
-  81  /
-  82  ;
-  83   
-  84  table A(s,r,s,t)     coeficientes restricciones master
-  85             1.1       1.2       1.3       2.4       2.5       3.6       3.7       3.8       3.9      4.10      5.11      5.12      5.13
-  86   1.1        28        38        12         0         0         0         0         0         0         0         0         0         0
-  87   1.2        18        82        15         0         0         0         0         0         0         0         0         0         0
-  88   2.3        -4        -2        -6        61        74         0         0         0         0         0         0         0         0
-  89   2.4        -1        -2        -5        30        40         0         0         0         0         0         0         0         0
-  90   2.5        -7        -4        -4        50        95         0         0         0         0         0         0         0         0
-  91   2.6        -2        -3        -1        92        70         0         0         0         0         0         0         0         0
-  92   3.7         0         0         0        -9        -7        88        48        26        21         0         0         0         0
-  93   3.8         0         0         0        -8        -9        81        19        95        70         0         0         0         0
-  94   3.9         0         0         0        -7        -7        55        26        51        24         0         0         0         0
-  95  4.10         0         0         0         0         0        -8        -7        -6        -1        24         0         0         0
-  96  4.11         0         0         0         0         0        -4        -4        -7        -3        32         0         0         0
-  97  4.12         0         0         0         0         0        -9        -6        -6        -8        70         0         0         0
-  98  5.13         0         0         0         0         0         0         0         0         0        -3        69        62        99
-  99  5.14         0         0         0         0         0         0         0         0         0        -8        64        48        26
- 100  5.15         0         0         0         0         0         0         0         0         0        -5        60        28        16
- 101  5.16         0         0         0         0         0         0         0         0         0        -6        85        57        99
- 102  5.17         0         0         0         0         0         0         0         0         0        -3        68        32        91
- 103  ;
- 104   
- 105   
+   3  t        periodos
+   4  r        rows
+   5  s        stages
+   6  snt     forward o backward
+   7  iter    iteration index
+   8   
+   9  MAPSP(s,t)
+  10  MAPSrow(s,r)
+  11   
+  12  ;
+  13   
+  14  alias(t,t1,t2,t3);
+  15  alias(r,r1,r2,r3);
+  16  alias(s,s1,s2,s3,s4)
+  17  alias(iter,iter_1,iter_2);
+  18   
+  19  parameters
+  20  c(s,t)     coeficientes FO
+  21  b(s,r)     cotas restricciones
+  22  A(s,r,s,t)    coeficientes restricciones master
+  23  ;
+  24   
+  25  parameters
+  26  k valor de periodo
+  27  iteracion valor de iteracion
+  28  TOL tolerancia
+  29  parametro_benders parametro
+  30  dispb          parametro de desplazamiento
+  31  x_k(s,t)           variable perido previo
+  32  x_k_b(s,t)         variable perido previo
+  33  x_k_m(s,t)         variable perido previo
+  34  x_k_m_f(s,t)       variable perido previo
+  35  Z_k(s)           fo periodo previo
+  36  theta_k(s)       funcion recursiva
+  37  pi_k(s,r)          marginal de ecuacion
+  38  deltha_k(s)      factibilidad (0 0 1)
+  39  x_kk(iter,s,t)     variable perido previo
+  40  x_kk_b(iter,s,t)   variable perido previo
+  41  x_kk_m(iter,s,t)   variable perido previo
+  42  x_kk_m_f(iter,s,t) variable perido previo
+  43  Z_kk(iter,s)     fo periodo previo
+  44  Z_kk_b(iter,s)           fo periodo previo
+  45  theta_kk(iter,s)       funcion recursiva
+  46  alpha_kk(iter,s)       funcion recursiva
+  47  alpha_b_kk(iter,s)       funcion recursiva
+  48  pi_kk(iter,s,r)          marginal de ecuacion
+  49  pi_kk_f(iter,s,r)          marginal de ecuacion
+  50  mu_kk(iter,s)        dual del corte
+  51  betha_kk(iter,s)     cota del corte
+  52  deltha_kk(iter,s)        factibilidad (0 0 1)
+  53  Z_inferior(iter)    cota inferior
+  54  Z_inferior_1(iter)    cota inferior
+  55  Z_inferior_2(iter)    cota inferior
+  56  Z_inferior_3(iter)    cota inferior
+  57  Z_superior(iter)    cota superior
+  58  Z_inf    cota inferior
+  59  Z_sup    cota superior
+  60  GAP(iter) diferencias entre cotas
+  61  ;
+  62   
+GDXIN   C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\gtin.gdx
+--- LOAD  t = 1:t
+--- LOAD  r = 2:r
+--- LOAD  s = 3:s
+--- LOAD  MAPSP = 6:MAPSP
+--- LOAD  MAPSrow = 7:MAPSrow
+--- LOAD  c = 8:c
+--- LOAD  b = 9:b
+--- LOAD  A = 10:A
+--- LOAD  k = 11:k
+  67   
+  68  positive variables
+  69  x(s,t)     variables
+  70  ;
+  71   
+  72  variables
+  73  Z      FO
+  74  alpha(s)    recursiva
+  75  ;
+  76   
+  77  equations
+  78  eq_z1            funcion objetivo master primera iteracion benders
+  79  eq_zk            funcion objetivo master j iteracion benders
+  80  eq_zk1            funcion objetivo master j iteracion benders
+  81  eq_r1(s,r)         ecuaciones
+  82  eq_rk(iter,s,r)         ecuaciones
+  83  eq_rkb(iter,s)        ecuaciones
+  84  eq_rkf(iter,s)        ecuaciones
+  85  ;
+  86   
+  87  eq_z1..  sum[(s1,t1)$[ord(s1)=1],c(s1,t1)*x(s1,t1)]   =e= Z  ;
+  88   
+  89  eq_zk1.. sum[(s1,t1)$[ord(s1)=k],c(s1,t1)*x(s1,t1)]   =e= Z  ;
+  90   
+  91  eq_zk..  sum[(s1,t1)$[ord(s1)=k],c(s1,t1)*x(s1,t1)] + sum[s1$[ord(s1)=k],alpha(s1)]  =e= Z  ;
+  92   
+  93  eq_r1(s2,r2)$[ord(s2)=k]..   sum[(s1,t1)$[MAPSP(s1,t1) and (ord(s1)=1)],A(s2,r2,s1,t1)*x(s1,t1)] =g= b(s2,r2);
+  94   
+  95  eq_rk(iter_1,s2,r2)${[ord(s2)=k] and
+  96                       [ord(iter_1) = iteracion   ]}..    sum[(s1,t1)$[MAPSP(s1,t1) and
+  97                                                                           (ord(s1)=k)      ],A(s2,r2,s1,t1)*x(s1,t1)]
+  98                                                             =g=
+  99                                                             b(s2,r2)
+ 100                                                             -sum[(s1,t1)$[MAPSP(s1,t1) and
+ 101                                                                           (ord(s1)=k-1)    ],A(s2,r2,s1,t1)*x_kk(iter_1,s1,t1)]
+ 102                                                             ;
+ 103   
+ 104  eq_rkf(iter_1,s2)$[(ord(s2)=k) and
+ 105                     (ord(iter_1)= iteracion-1 )]..    sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
+ 106                                                       =g=
+ 107                                                       sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
+ 108                                                                      (ord(s1)=k+1)   and
+ 109                                                                       MAPSP(s2,t2)   and
+ 110                                                                      (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
+ 111                                                       ;
+ 112   
+ 113  eq_rkb(iter_1,s2)$[(ord(s2)=k) and
+ 114                     (ord(iter_1)= iteracion   )]..     sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
+ 115                                                       =g=
+ 116                                                       sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
+ 117                                                                      (ord(s1)=k+1)   and
+ 118                                                                       MAPSP(s2,t2)   and
+ 119                                                                      (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
+ 120                                                       ;
+ 121   
+ 122  model multibenders1  /eq_z1, eq_r1/ ;
+ 123  model multibenders2a /eq_zk1, eq_rk/ ;
+ 124  model multibenders2  /eq_zk, eq_rk/ ;
+ 125  model multibenders3  /eq_zk, eq_r1, eq_rkf/ ;
+ 126  model multibenders4a /eq_zk, eq_rk, eq_rkf/ ;
+ 127  model multibenders4  /eq_zk, eq_rk, eq_rkb/ ;
+ 128   
+ 129   
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/13/23 02:24:47 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Include File Summary
 
 
-COMPILATION TIME     =        0.000 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
+   SEQ   GLOBAL TYPE      PARENT   LOCAL  FILENAME
+
+     1        1 INPUT          0       0  C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\_gams_py_gjo0.gms
+     2       64 GDXIN          1      64  C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\gtin.gdx
+
+
+COMPILATION TIME     =        0.016 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/13/23 02:24:47 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
 
 
 EXECUTION TIME       =        0.000 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
@@ -124,3 +166,6 @@ USER: Small MUD - 5 User License                     G220908|0002CO-WIN
 
 Input      C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\_gams_py_gjo0.gms
 Output     C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\_gams_py_gjo0.lst
+Save       C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\_gams_py_gcp0.g00
+
+**** WARNING - COMPILER OPTIONS ARE NON DEFAULT     ONEMPTY

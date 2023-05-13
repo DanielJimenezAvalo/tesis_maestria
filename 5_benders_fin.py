@@ -173,7 +173,7 @@ if __name__ == "__main__":
     t5 = ws.add_job_from_string(get_data_text())
     t5.run()
     #t5.out_db.export(os.path.join(ws.working_directory, "tdata.gdx"))
-    t5.out_db.export("./tdata.gdx")
+        
     #complete the model
     t5 = ws.add_job_from_string(get_model_text())
     #insert gdx file as an option
