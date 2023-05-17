@@ -1,4 +1,4 @@
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/13/23 02:24:47 Page 1
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/17/23 13:50:06 Page 1
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 C o m p i l a t i o n
 
@@ -69,12 +69,17 @@ GDXIN   C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_mae
 --- LOAD  t = 1:t
 --- LOAD  r = 2:r
 --- LOAD  s = 3:s
+--- LOAD  iter = 4:iter
+--- LOAD  snt = 5:snt
 --- LOAD  MAPSP = 6:MAPSP
 --- LOAD  MAPSrow = 7:MAPSrow
 --- LOAD  c = 8:c
 --- LOAD  b = 9:b
 --- LOAD  A = 10:A
 --- LOAD  k = 11:k
+--- LOAD  iteracion = 12:iteracion
+--- LOAD  x_kk = 13:x_kk
+--- LOAD  Z_kk = 14:Z_kk
   67   
   68  positive variables
   69  x(s,t)     variables
@@ -138,7 +143,7 @@ GDXIN   C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_mae
  127  model multibenders4  /eq_zk, eq_rk, eq_rkb/ ;
  128   
  129   
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/13/23 02:24:47 Page 2
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/17/23 13:50:06 Page 2
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 Include File Summary
 
@@ -149,8 +154,8 @@ Include File Summary
      2       64 GDXIN          1      64  C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\gtin.gdx
 
 
-COMPILATION TIME     =        0.016 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/13/23 02:24:47 Page 3
+COMPILATION TIME     =        0.015 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/17/23 13:50:06 Page 3
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 E x e c u t i o n
 

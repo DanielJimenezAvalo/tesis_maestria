@@ -62,7 +62,7 @@ GAP(iter) diferencias entre cotas
 
 $if not set gdxincname $abort 'no include file name for data file provided'
 $gdxin %gdxincname%
-$load t r s MAPSP MAPSrow c b A k iteracion x_kk Z_kk
+$load t r s iter snt MAPSP MAPSrow c b A k iteracion x_kk Z_kk
 $gdxin
 
 positive variables

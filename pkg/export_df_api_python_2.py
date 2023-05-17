@@ -22,8 +22,8 @@ class create_inform_df():
         for criteria in ['level','marginal','upper','lower']:
             self.dict_output[criteria]={}
             for rec in self.runmodel.out_db.get_variable(f'{variable}'):
-                #print(len(rec.keys))
-                if len(rec.keys) != 0:
+                print(tuple(rec.keys))
+                if tuple(rec.keys) !="":
                     match criteria:
                         case 'level':
                             self.dict_output[criteria][tuple(rec.keys)]= str(rec.level)
@@ -36,13 +36,13 @@ class create_inform_df():
                 else:
                     match criteria:
                         case 'level':
-                            self.dict_output[criteria][('1')]= str(rec.level)
+                            self.dict_output[criteria]= str(self.runmodel.out_db.get_variable(variable).find_record().level)
                         case 'marginal':
-                            self.dict_output[criteria][('1')]= str(rec.marginal)
+                            self.dict_output[criteria]= str(self.runmodel.out_db.get_variable(variable).find_record().marginal)
                         case 'upper':
-                            self.dict_output[criteria][('1')]= str(rec.upper)
+                            self.dict_output[criteria]= str(self.runmodel.out_db.get_variable(variable).find_record().upper)
                         case 'lower':
-                            self.dict_output[criteria][('1')]= str(rec.lower)
+                            self.dict_output[criteria]= str(self.runmodel.out_db.get_variable(variable).find_record().lower)
                 
         return self.dict_output
 
@@ -57,9 +57,8 @@ class create_inform_df():
         for criteria in ['level','marginal','upper','lower']:
             self.dict_output_e[criteria]={}
             for rec in self.runmodel.out_db.get_equation(f'{equation}'):
-                #print(len(rec.keys))
-                #print(tuple(rec.keys))
-                if len(rec.keys) !=0:
+                print(tuple(rec.keys))
+                if tuple(rec.keys) !="":
                     match criteria:
                         case 'level':
                             self.dict_output_e[criteria][tuple(rec.keys)]= str(rec.level)
@@ -72,12 +71,12 @@ class create_inform_df():
                 else:
                     match criteria:
                         case 'level':
-                            self.dict_output_e[criteria][('1')]= str(rec.level)
+                            self.dict_output_e[criteria]= str(self.runmodel.out_db.get_equation(equation).find_record().level)
                         case 'marginal':
-                            self.dict_output_e[criteria][('1')]= str(rec.marginal)
+                            self.dict_output_e[criteria]= str(self.runmodel.out_db.get_equation(equation).find_record().marginal)
                         case 'upper':
-                            self.dict_output_e[criteria][('1')]= str(rec.upper)
+                            self.dict_output_e[criteria]= str(self.runmodel.out_db.get_equation(equation).find_record().upper)
                         case 'lower':
-                            self.dict_output_e[criteria][('1')]= str(rec.lower)
+                            self.dict_output_e[criteria]= str(self.runmodel.out_db.get_equation(equation).find_record().lower)
 
         return self.dict_output_e

@@ -478,7 +478,6 @@ if __name__ == "__main__":
                     k_df_parameter=pd.DataFrame([(str(s_python))],columns=['k'])
                     k=gt.Parameter(model_container,'k')
                     k.setRecords(k_df_parameter)
-
                     
                     iteracion_df_parameter=pd.DataFrame([(str(iter_python))],columns=['iteracion'])
                     iteracion=gt.Parameter(model_container,'iteracion')
@@ -515,15 +514,14 @@ if __name__ == "__main__":
 
                     check_point=ws.add_checkpoint()
 
-                    transfer_model.run(gams_options=opt)                    
+                    transfer_model.run(gams_options=opt,checkpoint=check_point)                    
                     
-                    transfer_model = ws.add_job_from_string(gams_source="solve multibenders1 using LP minimizing Z;",checkpoint=check_point)
+                    transfer_model = ws.add_job_from_string(gams_source="solve multibenders1 using LP minimizing Z;",
+                                                            checkpoint=check_point)
 
-                    transfer_model.run()   
+                    transfer_model.run(gams_options=opt,checkpoint=check_point)   
 
                     transfer_model_out=gt.Container(os.path.join(ws.working_directory, opt.gdx))
-
-                    del opt,check_point
 
                     print("********************************************")
                     print("Scenario k=" + str(s_python) + ":")
@@ -532,9 +530,10 @@ if __name__ == "__main__":
                     #resultados de la simulacion en dataframes
                     job=pkg.export_df_api_python.create_inform_df(transfer_model)
                     dict_variable=job.print_get_varible('x')
-                    print(dict_variable)
+                    #print(dict_variable)
                     dict_ecuacion=job.print_get_equation('eq_r1')
                     dict_fo=job.print_get_varible('Z')
+                    #print(dict_fo)
                     job.print_get_equation('eq_z1') 
 
                     #crear el container                    
@@ -547,7 +546,7 @@ if __name__ == "__main__":
                         if m.key(0)==str(s_python):
                             s_mapsp.append(str(m.key(0)))
                             t_mapsp.append(str(m.key(1)))
-
+                    
                     list_keys_0=[list(dict_variable['level'].keys())[i][0] for i in range(len(list(dict_variable['level'].keys())))]
                     list_keys_1=[list(dict_variable['level'].keys())[i][1] for i in range(len(list(dict_variable['level'].keys())))]
                     list_values=[list(dict_variable['level'].values())[i] for i in range(len(list(dict_variable['level'].keys())))]
@@ -556,14 +555,14 @@ if __name__ == "__main__":
                     array_xkk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
                     dataframe_resultados[iter_python][snt_python][s_python]['pd_xkk']=pd.DataFrame(array_xkk,columns=["iter","s","t","Value"])
 
-                    array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']))]
+                    array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']['1']))]
                     dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']=pd.DataFrame(array_zkk,columns=["iter","s","Value"])
                     
                     print(dataframe_resultados)
 
                     #del transfer_model,check_point
 
-                elif iter_python==1 and snt_python=="forward" and (s_python>1 or s_python<max(s_list)):
+                elif iter_python==1 and snt_python=="forward" and (s_python>1 and s_python<max(s_list)):
 
                     k_df_parameter=pd.DataFrame([(str(s_python))],columns=['k'])
                     model_container.removeSymbols('k')
@@ -597,11 +596,14 @@ if __name__ == "__main__":
 
                     check_point=ws.add_checkpoint()
 
-                    transfer_model.run(gams_options=opt)                    
+                    transfer_model.run(gams_options=opt,
+                                       checkpoint=check_point)                    
                     
-                    transfer_model = ws.add_job_from_string(gams_source="solve multibenders2a using LP minimizing Z;",checkpoint=check_point)
+                    transfer_model = ws.add_job_from_string(gams_source="solve multibenders2a using LP minimizing Z;",
+                                                            checkpoint=check_point)
 
-                    transfer_model.run()   
+                    transfer_model.run(gams_options=opt,
+                                       checkpoint=check_point)   
 
                     transfer_model_out=gt.Container(os.path.join(ws.working_directory, opt.gdx)) 
 
@@ -612,11 +614,11 @@ if __name__ == "__main__":
                     #resultados de la simulacion en dataframes
                     job=pkg.export_df_api_python.create_inform_df(transfer_model)
                     dict_variable=job.print_get_varible('x')
-                    dict_ecuacion=job.print_get_equation('eq_r1')
+                    dict_ecuacion=job.print_get_equation('eq_rk')
                     dict_fo=job.print_get_varible('Z')
-                    job.print_get_equation('eq_z1') 
+                    job.print_get_equation('eq_zk1') 
 
-                    #crear el container                    
+                    #crear el container                
 
                     #preparar la data para que pueda ser incluida en ek container
                     s_mapsp=[]
@@ -631,20 +633,113 @@ if __name__ == "__main__":
                     list_keys_1=[list(dict_variable['level'].keys())[i][1] for i in range(len(list(dict_variable['level'].keys())))]
                     list_values=[list(dict_variable['level'].values())[i] for i in range(len(list(dict_variable['level'].keys())))]
                     list_iter=[str(iter_python)]*len(list_keys_0)
-                    
+                                     
                     array_xkk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
                     dataframe_resultados[iter_python][snt_python][s_python]['pd_xkk']=pd.DataFrame(array_xkk,columns=["iter","s","t","Value"])
 
-                    array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']))]
+                    array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']['1']))]
                     dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']=pd.DataFrame(array_zkk,columns=["iter","s","Value"])
+                    
+                    print(dataframe_resultados)
 
                 elif iter_python==1 and snt_python=="forward" and s_python==max(s_list):
 
-                    k=s
-                    m=s-1
-                    print("gamssolve(multibenders2a)")
-                    print("\n")
-                    pass   
+                    k_df_parameter=pd.DataFrame([(str(s_python))],columns=['k'])
+                    model_container.removeSymbols('k')
+                    k=gt.Parameter(model_container,'k')
+                    k.setRecords(k_df_parameter)
+
+                    iteracion_df_parameter=pd.DataFrame([(str(iter_python))],columns=['iteracion'])
+                    model_container.removeSymbols('iteracion')
+                    iteracion=gt.Parameter(model_container,'iteracion')
+                    iteracion.setRecords(iteracion_df_parameter)
+
+                    #prueba insercion x_kk
+                    pd_xkk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_xkk']
+                    model_container.removeSymbols('x_kk')
+                    x_kk=gt.Parameter(model_container,'x_kk',[iter,s,t])
+                    x_kk.setRecords(pd_xkk)
+
+                    #prueba insercion z_kk
+                    pd_zkk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_zkk']
+                    model_container.removeSymbols('Z_kk')
+                    Z_kk=gt.Parameter(model_container,"Z_kk",[iter,s])
+                    Z_kk.setRecords(pd_zkk)
+
+                    #prueba theta_kk
+                    list_iter=['1']
+                    list_keys_0=['1']
+                    list_values=['12']
+                    
+                    array_thetakk=list(zip(list_iter,list_keys_0,list_values))
+                    pd_thetakk=pd.DataFrame(array_thetakk,columns=["iter","s","Value"])
+                    theta_kk=gt.Parameter(model_container,"theta_kk",[iter,s])
+                    theta_kk.setRecords(pd_thetakk)
+                    
+                    model_container.write("./gtin.gdx")
+
+                    transfer_model=ws.add_job_from_string(get_model_text())
+                    opt=ws.add_options()
+                    opt.defines["gdxincname"]="gtin.gdx"
+                    opt.all_model_types="cplex"
+                    opt.gdx="gtout.gdx"
+
+                    check_point=ws.add_checkpoint()
+
+                    transfer_model.run(gams_options=opt,
+                                       checkpoint=check_point)                    
+                    
+                    transfer_model = ws.add_job_from_string(gams_source="solve multibenders2a using LP minimizing Z;",
+                                                            checkpoint=check_point)
+
+                    transfer_model.run(gams_options=opt,
+                                       checkpoint=check_point)   
+
+                    transfer_model_out=gt.Container(os.path.join(ws.working_directory, opt.gdx)) 
+
+                    print("********************************************")
+                    print("Scenario k=" + str(s_python) + ":")
+                    print("********************************************")
+
+                    #resultados de la simulacion en dataframes
+                    job=pkg.export_df_api_python.create_inform_df(transfer_model)
+                    dict_variable=job.print_get_varible('x')
+                    dict_ecuacion=job.print_get_equation('eq_rk')
+                    dict_fo=job.print_get_varible('Z')
+                    job.print_get_equation('eq_zk1') 
+
+                    #crear el container                
+
+                    #preparar la data para que pueda ser incluida en ek container
+                    s_mapsp=[]
+                    t_mapsp=[]
+
+                    for m in list(transfer_model.out_db["MAPSP"]):
+                        if m.key(0)==str(s_python):
+                            s_mapsp.append(str(m.key(0)))
+                            t_mapsp.append(str(m.key(1)))
+
+                    list_keys_0=[list(dict_variable['level'].keys())[i][0] for i in range(len(list(dict_variable['level'].keys())))]
+                    list_keys_1=[list(dict_variable['level'].keys())[i][1] for i in range(len(list(dict_variable['level'].keys())))]
+                    list_values=[list(dict_variable['level'].values())[i] for i in range(len(list(dict_variable['level'].keys())))]
+                    list_iter=[str(iter_python)]*len(list_keys_0)
+
+                    list_keys_01=[list(dict_ecuacion['marginal'].keys())[i][0] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                    list_keys_11=[list(dict_ecuacion['marginal'].keys())[i][1] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                    list_values1=[list(dict_ecuacion['marginal'].values())[i] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                    list_iter1=[str(iter_python)]*len(list_keys_01)
+                                     
+                    array_xkk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
+                    dataframe_resultados[iter_python][snt_python][s_python]['pd_xkk']=pd.DataFrame(array_xkk,columns=["iter","s","t","Value"])
+
+                    array_pikk=list(zip(list_iter1,list_keys_01,list_keys_11,list_values1))
+                    dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","t","Value"])
+
+                    array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']['1']))]
+                    dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']=pd.DataFrame(array_zkk,columns=["iter","s","Value"])
+                    dataframe_resultados[iter_python][snt_python][s_python-1]['pd_thetakk']=dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']
+
+                    print(dataframe_resultados)  
 
                 elif iter_python>1 and snt_python=="forward" and s_python==1:
                           
@@ -670,9 +765,99 @@ if __name__ == "__main__":
 
                 elif iter_python>=1 and snt_python=="backward" and (s_python>1 and s_python<max(s_list)):
 
-                    k=max(s_list)-s+1
-                    dispb=max(s_list)-2*s+1
+                    k_df_parameter=pd.DataFrame([(str(s_python))],columns=['k'])
+                    model_container.removeSymbols('k')
+                    k=gt.Parameter(model_container,'k')
+                    k.setRecords(k_df_parameter)
 
-                    print("gamssolve(multibenders2a)")
-                    print("\n")
-                    pass
+                    iteracion_df_parameter=pd.DataFrame([(str(iter_python))],columns=['iteracion'])
+                    model_container.removeSymbols('iteracion')
+                    iteracion=gt.Parameter(model_container,'iteracion')
+                    iteracion.setRecords(iteracion_df_parameter)
+
+                    #prueba insercion x_kk
+                    pd_xkk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_xkk']
+                    model_container.removeSymbols('x_kk')
+                    x_kk=gt.Parameter(model_container,'x_kk',[iter,s,t])
+                    x_kk.setRecords(pd_xkk)
+
+                    #prueba insercion z_kk
+                    pd_zkk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_zkk']
+                    model_container.removeSymbols('Z_kk')
+                    Z_kk=gt.Parameter(model_container,"Z_kk",[iter,s])
+                    Z_kk.setRecords(pd_zkk)
+
+                    #prueba theta_kk
+                    list_iter=['1']
+                    list_keys_0=['1']
+                    list_values=['12']
+                    
+                    array_thetakk=list(zip(list_iter,list_keys_0,list_values))
+                    pd_thetakk=pd.DataFrame(array_thetakk,columns=["iter","s","Value"])
+                    theta_kk=gt.Parameter(model_container,"theta_kk",[iter,s])
+                    theta_kk.setRecords(pd_thetakk)
+                    
+                    model_container.write("./gtin.gdx")
+
+                    transfer_model=ws.add_job_from_string(get_model_text())
+                    opt=ws.add_options()
+                    opt.defines["gdxincname"]="gtin.gdx"
+                    opt.all_model_types="cplex"
+                    opt.gdx="gtout.gdx"
+
+                    check_point=ws.add_checkpoint()
+
+                    transfer_model.run(gams_options=opt,
+                                       checkpoint=check_point)                    
+                    
+                    transfer_model = ws.add_job_from_string(gams_source="solve multibenders2a using LP minimizing Z;",
+                                                            checkpoint=check_point)
+
+                    transfer_model.run(gams_options=opt,
+                                       checkpoint=check_point)   
+
+                    transfer_model_out=gt.Container(os.path.join(ws.working_directory, opt.gdx)) 
+
+                    print("********************************************")
+                    print("Scenario k=" + str(s_python) + ":")
+                    print("********************************************")
+
+                    #resultados de la simulacion en dataframes
+                    job=pkg.export_df_api_python.create_inform_df(transfer_model)
+                    dict_variable=job.print_get_varible('x')
+                    dict_ecuacion=job.print_get_equation('eq_rk')
+                    dict_fo=job.print_get_varible('Z')
+                    job.print_get_equation('eq_zk1') 
+
+                    #crear el container                
+
+                    #preparar la data para que pueda ser incluida en ek container
+                    s_mapsp=[]
+                    t_mapsp=[]
+
+                    for m in list(transfer_model.out_db["MAPSP"]):
+                        if m.key(0)==str(s_python):
+                            s_mapsp.append(str(m.key(0)))
+                            t_mapsp.append(str(m.key(1)))
+
+                    list_keys_0=[list(dict_variable['level'].keys())[i][0] for i in range(len(list(dict_variable['level'].keys())))]
+                    list_keys_1=[list(dict_variable['level'].keys())[i][1] for i in range(len(list(dict_variable['level'].keys())))]
+                    list_values=[list(dict_variable['level'].values())[i] for i in range(len(list(dict_variable['level'].keys())))]
+                    list_iter=[str(iter_python)]*len(list_keys_0)
+
+                    list_keys_01=[list(dict_ecuacion['marginal'].keys())[i][0] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                    list_keys_11=[list(dict_ecuacion['marginal'].keys())[i][1] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                    list_values1=[list(dict_ecuacion['marginal'].values())[i] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                    list_iter1=[str(iter_python)]*len(list_keys_01)
+                                     
+                    array_xkk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
+                    dataframe_resultados[iter_python][snt_python][s_python]['pd_xkk']=pd.DataFrame(array_xkk,columns=["iter","s","t","Value"])
+
+                    array_pikk=list(zip(list_iter1,list_keys_01,list_keys_11,list_values1))
+                    dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","t","Value"])
+
+                    array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']['1']))]
+                    dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']=pd.DataFrame(array_zkk,columns=["iter","s","Value"])
+                    dataframe_resultados[iter_python][snt_python][s_python-1]['pd_thetakk']=dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']
+
+                    print(dataframe_resultados)  
