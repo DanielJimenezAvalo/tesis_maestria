@@ -4,7 +4,7 @@ import shutil
 import time
 import json
 from gams import GamsWorkspace
-
+'''
 class create_inform_df():
 
     def __init__(self,runmodel):
@@ -80,3 +80,5 @@ class create_inform_df():
                             self.dict_output_e[criteria]= str(self.runmodel.out_db.get_equation(equation).find_record().lower)
 
         return self.dict_output_e
+
+'''

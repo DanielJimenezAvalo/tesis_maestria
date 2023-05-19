@@ -1,15 +1,15 @@
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/17/23 13:50:07 Page 4
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/19/23 00:10:00 Page 4
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 C o m p i l a t i o n
 
 
- 130  solve multibenders1 using LP minimizing Z;
+ 135  solve multibenders1 using LP minimizing Z;
 
 
 COMPILATION TIME     =        0.000 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/17/23 13:50:07 Page 5
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/19/23 00:10:00 Page 5
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
-Equation Listing    SOLVE multibenders1 Using LP From line 130
+Equation Listing    SOLVE multibenders1 Using LP From line 135
 
 
 ---- eq_z1  =E=  funcion objetivo master primera iteracion benders
@@ -23,9 +23,9 @@ eq_r1(1,1)..  28*x(1,1) + 38*x(1,2) + 12*x(1,3) =G= 2105 ; (LHS = 0, INFES = 210
      
 eq_r1(1,2)..  18*x(1,1) + 82*x(1,2) + 15*x(1,3) =G= 2453 ; (LHS = 0, INFES = 2453 ****)
      
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/17/23 13:50:07 Page 6
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/19/23 00:10:00 Page 6
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
-Column Listing      SOLVE multibenders1 Using LP From line 130
+Column Listing      SOLVE multibenders1 Using LP From line 135
 
 
 ---- x  variables
@@ -55,9 +55,9 @@ Z
                 (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
        -1       eq_z1
 
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/17/23 13:50:07 Page 7
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/19/23 00:10:00 Page 7
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
-Model Statistics    SOLVE multibenders1 Using LP From line 130
+Model Statistics    SOLVE multibenders1 Using LP From line 135
 
 
 MODEL STATISTICS
@@ -67,17 +67,17 @@ BLOCKS OF VARIABLES           2     SINGLE VARIABLES            4
 NON ZERO ELEMENTS            10
 
 
-GENERATION TIME      =        0.015 SECONDS      4 MB  42.4.0 9dfaaa40 WEX-WEI
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/17/23 13:50:07 Page 8
+GENERATION TIME      =        0.016 SECONDS      4 MB  42.4.0 9dfaaa40 WEX-WEI
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/19/23 00:10:00 Page 8
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
-Solution Report     SOLVE multibenders1 Using LP From line 130
+Solution Report     SOLVE multibenders1 Using LP From line 135
 
 
                S O L V E      S U M M A R Y
 
      MODEL   multibenders1       OBJECTIVE  Z
      TYPE    LP                  DIRECTION  MINIMIZE
-     SOLVER  CPLEX               FROM LINE  130
+     SOLVER  CPLEX               FROM LINE  135
 
 **** SOLVER STATUS     1 Normal Completion
 **** MODEL STATUS      1 Optimal
@@ -134,7 +134,7 @@ Objective:        21326.682382
                              0  UNBOUNDED
 
 
-EXECUTION TIME       =        0.203 SECONDS      4 MB  42.4.0 9dfaaa40 WEX-WEI
+EXECUTION TIME       =        0.188 SECONDS      4 MB  42.4.0 9dfaaa40 WEX-WEI
 
 
 USER: Small MUD - 5 User License                     G220908|0002CO-WIN

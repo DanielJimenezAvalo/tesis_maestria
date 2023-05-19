@@ -298,6 +298,8 @@ A_df_parameters=pd.DataFrame(
 
 A=gt.Parameter(model_container,'A',[s,r,s,t])
 A.setRecords(A_df_parameters)
+
+model_container.write("./gtin.gdx")
     
 
 def get_model_text():
@@ -365,7 +367,12 @@ GAP(iter) diferencias entre cotas
 
 $if not set gdxincname $abort 'no include file name for data file provided'
 $gdxin %gdxincname%
-$load t r s iter snt MAPSP MAPSrow c b A k iteracion x_kk Z_kk
+$load t r s iter snt MAPSP MAPSrow c b A
+$gdxin
+
+$if not set gdxincnamevariable $abort 'no include file name for data file provided'
+$gdxin %gdxincnamevariable%
+$load k iteracion x_kk Z_kk pi_kk theta_kk
 $gdxin
 
 positive variables
@@ -475,46 +482,64 @@ if __name__ == "__main__":
                     print(f"****** sentido: {snt_python} ******")
                     print(f"********* escenario: {s_python} *********")
 
-                    dataframe_resultados_iter_snt_s={}
+                    #dataframe_resultados_iter_snt_s={}
 
                     if iter_python==1:
 
                         if s_python==1:
 
+                            model_container_variable=gt.Container()
+
+                            t=gt.Set(model_container_variable,"t",records=model_container.getUELs('t'))
+                            r=gt.Set(model_container_variable,"r",records=model_container.getUELs('r'))
+                            s=gt.Set(model_container_variable,"s",records=model_container.getUELs('s'))
+                            iter=gt.Set(model_container_variable,"iter",records=model_container.getUELs('iter'))
+                            snt=gt.Set(model_container_variable,"snt",records=model_container.getUELs('snt'))
+
                             k_df_parameter=pd.DataFrame([(str(s_python))],columns=['k'])
-                            k=gt.Parameter(model_container,'k')
+                            k=gt.Parameter(model_container_variable,'k')
                             k.setRecords(k_df_parameter)
                             
                             iteracion_df_parameter=pd.DataFrame([(str(iter_python))],columns=['iteracion'])
-                            iteracion=gt.Parameter(model_container,'iteracion')
+                            iteracion=gt.Parameter(model_container_variable,'iteracion')
                             iteracion.setRecords(iteracion_df_parameter)
                             
                             #prueba insercion x_kk
-                            list_iter=['1','1','1']
-                            list_keys_0=['1','1','1']
-                            list_keys_1=['1','2','3']
-                            list_values=['12','12','12']
-                            
-                            array_xkk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
+                            list_keys_t=[mapsp_set_array[i][1] for i in range(len(mapsp_set_array)) if mapsp_set_array[i][0]=='1']
+
+                            array_xkk=list(zip([str(iter_python)]*3,[str(s_python)]*3,list_keys_t,['0']*3))
                             pd_xkk=pd.DataFrame(array_xkk,columns=['iter','s','t','Value'])
-                            x_kk=gt.Parameter(model_container,'x_kk',[iter,s,t])
+                            x_kk=gt.Parameter(model_container_variable,'x_kk',[iter,s,t])
                             x_kk.setRecords(pd_xkk)
 
-                            #prueba insercion z_kk
-                            list_iter=['1']
-                            list_keys_0=['1']
-                            list_values=['12']
+                            #prueba insercion pi_kk
+                            list_keys_t=[mapsp_set_array[i][1] for i in range(len(mapsp_set_array)) if mapsp_set_array[i][0]=='1']
 
-                            array_zkk=list(zip(list_iter,list_keys_0,list_values))
+                            array_pikk=list(zip([str(iter_python)]*3,[str(s_python)]*3,list_keys_t,['0']*3))
+                            pd_pikk=pd.DataFrame(array_pikk,columns=['iter','s','t','Value'])
+                            pi_kk=gt.Parameter(model_container_variable,'pi_kk',[iter,s,t])
+                            pi_kk.setRecords(pd_pikk)
+
+                            #prueba insercion z_kk
+                            array_zkk=list(zip([str(iter_python)],[str(s_python)],[0]))
                             pd_zkk=pd.DataFrame(array_zkk,columns=["iter","s","Value"])
-                            Z_kk=gt.Parameter(model_container,"Z_kk",[iter,s])
+                            Z_kk=gt.Parameter(model_container_variable,"Z_kk",[iter,s])
                             Z_kk.setRecords(pd_zkk)
 
-                            model_container.write("./gtin.gdx")
+                            #prueba insercion theta_kk
+                            array_thetakk=list(zip([str(iter_python)],[str(s_python)],[0]))
+                            pd_thetakk=pd.DataFrame(array_thetakk,columns=["iter","s","Value"])
+                            theta_kk=gt.Parameter(model_container_variable,"theta_kk",[iter,s])
+                            theta_kk.setRecords(pd_thetakk)
+
+                            #model_container.write("./gtin.gdx")
+
+                            model_container_variable.write("./gtinvariable.gdx")
 
                             transfer_model=ws.add_job_from_string(get_model_text())
                             opt=ws.add_options()
                             opt.defines["gdxincname"]="gtin.gdx"
+                            opt.defines["gdxincnamevariable"]="gtinvariable.gdx"
                             opt.all_model_types="cplex"
                             opt.gdx="gtout.gdx"
 
@@ -561,42 +586,90 @@ if __name__ == "__main__":
                             array_xkk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
                             dataframe_resultados[iter_python][snt_python][s_python]['pd_xkk']=pd.DataFrame(array_xkk,columns=["iter","s","t","Value"])
 
+                            array_pikk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
+                            dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","t","Value"])
+
                             array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']['1']))]
                             dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']=pd.DataFrame(array_zkk,columns=["iter","s","Value"])
+
+                            array_thetakk=[(str(iter_python),str(s_python),str(dict_fo['level']['1']))]
+                            dataframe_resultados[iter_python][snt_python][s_python]['pd_thetakk']=pd.DataFrame(array_thetakk,columns=["iter","s","Value"])
                             
                             print(dataframe_resultados)
 
-                            #del transfer_model,check_point
+                            del model_container_variable
 
                         elif (s_python>1 and s_python<max(s_list)):
 
+                            model_container_variable=gt.Container()
+
+                            t=gt.Set(model_container_variable,"t",records=model_container.getUELs('t'))
+                            r=gt.Set(model_container_variable,"r",records=model_container.getUELs('r'))
+                            s=gt.Set(model_container_variable,"s",records=model_container.getUELs('s'))
+                            iter=gt.Set(model_container_variable,"iter",records=model_container.getUELs('iter'))
+                            snt=gt.Set(model_container_variable,"snt",records=model_container.getUELs('snt'))
+                            MAPSP=gt.Set(model_container_variable,"MAPSP",records=model_container.getUELs('MAPSP'))
+                            MAPSrow=gt.Set(model_container_variable,"MAPSrow",records=model_container.getUELs('MAPSrow'))
+
                             k_df_parameter=pd.DataFrame([(str(s_python))],columns=['k'])
-                            model_container.removeSymbols('k')
-                            k=gt.Parameter(model_container,'k')
+                            if 'k' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('k')
+                            k=gt.Parameter(model_container_variable,'k')
                             k.setRecords(k_df_parameter)
 
                             iteracion_df_parameter=pd.DataFrame([(str(iter_python))],columns=['iteracion'])
-                            model_container.removeSymbols('iteracion')
-                            iteracion=gt.Parameter(model_container,'iteracion')
+                            #model_container_variable.removeSymbols('iteracion')
+                            if 'iteracion' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('iteracion')
+                            iteracion=gt.Parameter(model_container_variable,'iteracion')
                             iteracion.setRecords(iteracion_df_parameter)
 
                             #prueba insercion x_kk
                             pd_xkk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_xkk']
-                            model_container.removeSymbols('x_kk')
-                            x_kk=gt.Parameter(model_container,'x_kk',[iter,s,t])
+                            #model_container_variable.removeSymbols('x_kk')
+                            if 'x_kk' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('x_kk')
+                            x_kk=gt.Parameter(model_container_variable,'x_kk',[iter,s,t])
                             x_kk.setRecords(pd_xkk)
+
+                            #prueba insercion pi_kk
+                            pd_pikk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_pikk']
+                            #model_container_variable.removeSymbols('x_kk')
+                            if 'pi_kk' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('pi_kk')
+                            pi_kk=gt.Parameter(model_container_variable,'pi_kk',[iter,s,t])
+                            pi_kk.setRecords(pd_pikk)
 
                             #prueba insercion z_kk
                             pd_zkk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_zkk']
-                            model_container.removeSymbols('Z_kk')
-                            Z_kk=gt.Parameter(model_container,"Z_kk",[iter,s])
+                            #model_container_variable.removeSymbols('Z_kk')
+                            if 'Z_kk' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('Z_kk')
+                            Z_kk=gt.Parameter(model_container_variable,'Z_kk',[iter,s])
                             Z_kk.setRecords(pd_zkk)
+
+                            #prueba insercion theta_kk
+                            if s_python<=2:
+                                array_thetakk=list(zip([str(iter_python)],[str(s_python)],[0]))
+                                pd_thetakk=pd.DataFrame(array_thetakk,columns=["iter","s","Value"])
+                                theta_kk=gt.Parameter(model_container_variable,"theta_kk",[iter,s])
+                                theta_kk.setRecords(pd_thetakk)
+                            else:
+                                pd_thetakk=dataframe_resultados[iter_python][snt_python][s_python-2]['pd_thetakk']
+                            #model_container_variable.removeSymbols('Z_kk')
+                            if 'theta_kk' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('theta_kk')
+                            theta_kk=gt.Parameter(model_container_variable,'theta_kk',[iter,s])
+                            theta_kk.setRecords(pd_thetakk)
                             
-                            model_container.write("./gtin.gdx")
+                            #model_container.write("./gtin.gdx")
+
+                            model_container_variable.write("./gtinvariable.gdx")
 
                             transfer_model=ws.add_job_from_string(get_model_text())
                             opt=ws.add_options()
                             opt.defines["gdxincname"]="gtin.gdx"
+                            opt.defines["gdxincnamevariable"]="gtinvariable.gdx"
                             opt.all_model_types="cplex"
                             opt.gdx="gtout.gdx"
 
@@ -643,50 +716,91 @@ if __name__ == "__main__":
                             array_xkk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
                             dataframe_resultados[iter_python][snt_python][s_python]['pd_xkk']=pd.DataFrame(array_xkk,columns=["iter","s","t","Value"])
 
+                            array_pikk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
+                            dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","t","Value"])
+
                             array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']['1']))]
                             dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']=pd.DataFrame(array_zkk,columns=["iter","s","Value"])
+
+                            array_thetakk=[(str(iter_python),str(s_python-1),str(dict_fo['level']['1']))]
+                            dataframe_resultados[iter_python][snt_python][s_python-1]['pd_thetakk']=pd.DataFrame(array_thetakk,columns=["iter","s","Value"])
                             
                             print(dataframe_resultados)
 
+                            del model_container_variable
+
                         elif s_python==max(s_list):
 
+                            model_container_variable=gt.Container()
+
+                            t=gt.Set(model_container_variable,"t",records=model_container.getUELs('t'))
+                            r=gt.Set(model_container_variable,"r",records=model_container.getUELs('r'))
+                            s=gt.Set(model_container_variable,"s",records=model_container.getUELs('s'))
+                            iter=gt.Set(model_container_variable,"iter",records=model_container.getUELs('iter'))
+                            snt=gt.Set(model_container_variable,"snt",records=model_container.getUELs('snt'))
+                            MAPSP=gt.Set(model_container_variable,"MAPSP",records=model_container.getUELs('MAPSP'))
+                            MAPSrow=gt.Set(model_container_variable,"MAPSrow",records=model_container.getUELs('MAPSrow'))
+
                             k_df_parameter=pd.DataFrame([(str(s_python))],columns=['k'])
-                            model_container.removeSymbols('k')
-                            k=gt.Parameter(model_container,'k')
+                            #model_container_variable.removeSymbols('k')
+                            if 'k' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('k')
+                            k=gt.Parameter(model_container_variable,'k')
                             k.setRecords(k_df_parameter)
 
                             iteracion_df_parameter=pd.DataFrame([(str(iter_python))],columns=['iteracion'])
-                            model_container.removeSymbols('iteracion')
-                            iteracion=gt.Parameter(model_container,'iteracion')
+                            #model_container_variable.removeSymbols('iteracion')
+                            if 'iteracion' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('iteracion')
+                            iteracion=gt.Parameter(model_container_variable,'iteracion')
                             iteracion.setRecords(iteracion_df_parameter)
 
                             #prueba insercion x_kk
                             pd_xkk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_xkk']
-                            model_container.removeSymbols('x_kk')
-                            x_kk=gt.Parameter(model_container,'x_kk',[iter,s,t])
+                            #model_container_variable.removeSymbols('x_kk')
+                            if 'x_kk' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('x_kk')
+                            x_kk=gt.Parameter(model_container_variable,'x_kk',[iter,s,t])
                             x_kk.setRecords(pd_xkk)
+
+                            #prueba insercion pi_kk
+                            pd_pikk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_pikk']
+                            #model_container_variable.removeSymbols('x_kk')
+                            if 'pi_kk' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('pi_kk')
+                            pi_kk=gt.Parameter(model_container_variable,'pi_kk',[iter,s,t])
+                            pi_kk.setRecords(pd_pikk)
 
                             #prueba insercion z_kk
                             pd_zkk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_zkk']
-                            model_container.removeSymbols('Z_kk')
-                            Z_kk=gt.Parameter(model_container,"Z_kk",[iter,s])
+                            #model_container_variable.removeSymbols('Z_kk')
+                            if 'Z_kk' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('Z_kk')
+                            Z_kk=gt.Parameter(model_container_variable,'Z_kk',[iter,s])
                             Z_kk.setRecords(pd_zkk)
 
-                            #prueba theta_kk
-                            list_iter=['1']
-                            list_keys_0=['1']
-                            list_values=['12']
-                            
-                            array_thetakk=list(zip(list_iter,list_keys_0,list_values))
-                            pd_thetakk=pd.DataFrame(array_thetakk,columns=["iter","s","Value"])
-                            theta_kk=gt.Parameter(model_container,"theta_kk",[iter,s])
+                            #prueba insercion theta_kk
+                            if s_python<=2:
+                                array_thetakk=list(zip([str(iter_python)],[str(s_python)],[0]))
+                                pd_thetakk=pd.DataFrame(array_thetakk,columns=["iter","s","Value"])
+                                theta_kk=gt.Parameter(model_container_variable,"theta_kk",[iter,s])
+                                theta_kk.setRecords(pd_thetakk)
+                            else:
+                                pd_thetakk=dataframe_resultados[iter_python][snt_python][s_python-2]['pd_thetakk']
+                            #model_container_variable.removeSymbols('Z_kk')
+                            if 'theta_kk' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('theta_kk')
+                            theta_kk=gt.Parameter(model_container_variable,'theta_kk',[iter,s])
                             theta_kk.setRecords(pd_thetakk)
                             
-                            model_container.write("./gtin.gdx")
+                            #model_container.write("./gtin.gdx")
+
+                            model_container_variable.write("./gtinvariable.gdx")
 
                             transfer_model=ws.add_job_from_string(get_model_text())
                             opt=ws.add_options()
                             opt.defines["gdxincname"]="gtin.gdx"
+                            opt.defines["gdxincnamevariable"]="gtinvariable.gdx"
                             opt.all_model_types="cplex"
                             opt.gdx="gtout.gdx"
 
@@ -710,7 +824,9 @@ if __name__ == "__main__":
                             #resultados de la simulacion en dataframes
                             job=pkg.export_df_api_python.create_inform_df(transfer_model)
                             dict_variable=job.print_get_varible('x')
+                            #print(dict_variable)
                             dict_ecuacion=job.print_get_equation('eq_rk')
+                            #print(dict_ecuacion)
                             dict_fo=job.print_get_varible('Z')
                             job.print_get_equation('eq_zk1') 
 
@@ -730,8 +846,8 @@ if __name__ == "__main__":
                             list_values=[list(dict_variable['level'].values())[i] for i in range(len(list(dict_variable['level'].keys())))]
                             list_iter=[str(iter_python)]*len(list_keys_0)
 
-                            list_keys_01=[list(dict_ecuacion['marginal'].keys())[i][0] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
-                            list_keys_11=[list(dict_ecuacion['marginal'].keys())[i][1] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                            list_keys_01=[list(dict_ecuacion['marginal'].keys())[i][1] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                            list_keys_11=[list(dict_ecuacion['marginal'].keys())[i][2] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
                             list_values1=[list(dict_ecuacion['marginal'].values())[i] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
                             list_iter1=[str(iter_python)]*len(list_keys_01)
                                             
@@ -741,16 +857,15 @@ if __name__ == "__main__":
                             array_pikk=list(zip(list_iter1,list_keys_01,list_keys_11,list_values1))
                             dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","t","Value"])
 
-                            for snt_p in snt_list:
-                                if snt_p=='backward':
-                                    dataframe_resultados[iter_python]['backward'][s_python]['pd_pikk']=dataframe_resultados[iter_python]['forward'][s_python]['pd_pikk']
-
                             array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']['1']))]
                             dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']=pd.DataFrame(array_zkk,columns=["iter","s","Value"])
-                            dataframe_resultados[iter_python]['backward'][s_python-1]['pd_thetakk']=dataframe_resultados[iter_python]['forward'][s_python]['pd_zkk']
-                            
+
+                            array_thetakk=[(str(iter_python),str(s_python-1),str(dict_fo['level']['1']))]
+                            dataframe_resultados[iter_python][snt_python][s_python-1]['pd_thetakk']=pd.DataFrame(array_thetakk,columns=["iter","s","Value"])
 
                             print(dataframe_resultados)  
+
+                            del model_container_variable
 
                     else:
 
@@ -778,41 +893,76 @@ if __name__ == "__main__":
 
             else:
 
+                print("\n")
+                print(f"*** iteracion: {iter_python} ***")
+                print(f"****** sentido: {snt_python} ******")
+                print(f"********* escenario: {s_python} *********")
+
                 for s_python in s_list[::-1]: 
 
-#                    if s_python==max(s_list):
-#                        dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=dataframe_resultados[iter_python]['forward'][s_python]['pd_pikk']
-#                        dataframe_resultados[iter_python][snt_python][s_python-1]['pd_thetakk']=dataframe_resultados[iter_python]['forward'][s_python-1]['pd_thetakk']
+                    print(s_list[::-1])
+
+                    dataframe_resultados[iter_python][snt_python][s_python]={}
+                    
+                    model_container_variable=gt.Container()
+
+                    if s_python==max(s_list):
+                        dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=dataframe_resultados[iter_python]['forward'][s_python]['pd_pikk']
+                        print(dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk'])
+                        print(dataframe_resultados[iter_python]['forward'][4]['pd_thetakk'])
+                        dataframe_resultados[iter_python][snt_python][s_python]['pd_thetakk']=dataframe_resultados[iter_python]['forward'][4]['pd_thetakk']
 
                     if (s_python>1 and s_python<max(s_list)):
 
+                        t=gt.Set(model_container_variable,"t",records=model_container.getUELs('t'))
+                        r=gt.Set(model_container_variable,"r",records=model_container.getUELs('r'))
+                        s=gt.Set(model_container_variable,"s",records=model_container.getUELs('s'))
+                        iter=gt.Set(model_container_variable,"iter",records=model_container.getUELs('iter'))
+                        snt=gt.Set(model_container_variable,"snt",records=model_container.getUELs('snt'))
+                        MAPSP=gt.Set(model_container_variable,"MAPSP",records=model_container.getUELs('MAPSP'))
+                        MAPSrow=gt.Set(model_container_variable,"MAPSrow",records=model_container.getUELs('MAPSrow'))
+
                         k_df_parameter=pd.DataFrame([(str(s_python))],columns=['k'])
-                        model_container.removeSymbols('k')
-                        k=gt.Parameter(model_container,'k')
+                        #model_container_variable.removeSymbols('k')
+                        if 'k' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('k')
+                        k=gt.Parameter(model_container_variable,'k')
                         k.setRecords(k_df_parameter)
+                        print(k_df_parameter)
 
                         iteracion_df_parameter=pd.DataFrame([(str(iter_python))],columns=['iteracion'])
-                        model_container.removeSymbols('iteracion')
-                        iteracion=gt.Parameter(model_container,'iteracion')
+                        #model_container_variable.removeSymbols('iteracion')
+                        if 'iteracion' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('iteracion')
+                        iteracion=gt.Parameter(model_container_variable,'iteracion')
                         iteracion.setRecords(iteracion_df_parameter)
+                        print(iteracion_df_parameter)
 
                         #prueba theta_kk
-                        pd_thetakk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_thetakk']
-                        model_container.removeSymbols('theta_kk')
-                        theta_kk=gt.Parameter(model_container,"theta_kk",[iter,s])
+                        pd_thetakk=dataframe_resultados[iter_python][snt_python][s_python+1]['pd_thetakk']
+                        #model_container_variable.removeSymbols('theta_kk')
+                        if 'theta_kk' in model_container_variable.listParameters():
+                                model_container_variable.removeSymbols('theta_kk')
+                        theta_kk=gt.Parameter(model_container_variable,"theta_kk",[iter,s])
                         theta_kk.setRecords(pd_thetakk)
 
                         #prueba insercion pi_kk
-                        pd_pikk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_pikk']
-                        model_container.removeSymbols('pi_kk')
-                        pi_kk=gt.Parameter(model_container,'pi_kk',[iter,s,t])
+                        pd_pikk=dataframe_resultados[iter_python][snt_python][s_python+1]['pd_pikk']
+                        if 'pi_kk' in model_container_variable.listParameters():
+                            model_container_variable.removeSymbols('pi_kk')
+                        #model_container.removeSymbols('pi_kk')
+                        #print(model_container_variable.countDuplicateRecords())
+                        pi_kk=gt.Parameter(model_container_variable,'pi_kk',[iter,s,t])
                         pi_kk.setRecords(pd_pikk)
                         
-                        model_container.write("./gtin.gdx")
+                        #model_container.write("./gtin.gdx")
+
+                        model_container_variable.write("./gtinvariable.gdx")
 
                         transfer_model=ws.add_job_from_string(get_model_text())
                         opt=ws.add_options()
                         opt.defines["gdxincname"]="gtin.gdx"
+                        opt.defines["gdxincnamevariable"]="gtinvariable.gdx"
                         opt.all_model_types="cplex"
                         opt.gdx="gtout.gdx"
 
@@ -856,8 +1006,9 @@ if __name__ == "__main__":
                         #list_values=[list(dict_variable['level'].values())[i] for i in range(len(list(dict_variable['level'].keys())))]
                         #list_iter=[str(iter_python)]*len(list_keys_0)
 
-                        list_keys_01=[list(dict_ecuacion['marginal'].keys())[i][0] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
-                        list_keys_11=[list(dict_ecuacion['marginal'].keys())[i][1] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                        list_keys_01=[list(dict_ecuacion['marginal'].keys())[i][1] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                        print("prueba"+list_keys_01)
+                        list_keys_11=[list(dict_ecuacion['marginal'].keys())[i][2] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
                         list_values1=[list(dict_ecuacion['marginal'].values())[i] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
                         list_iter1=[str(iter_python)]*len(list_keys_01)
                                         

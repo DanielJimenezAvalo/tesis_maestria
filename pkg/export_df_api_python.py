@@ -57,7 +57,7 @@ class create_inform_df():
         for criteria in ['level','marginal','upper','lower']:
             self.dict_output_e[criteria]={}
             for rec in self.runmodel.out_db.get_equation(f'{equation}'):
-                #print(len(rec.keys))
+                #print(rec.keys)
                 #print(tuple(rec.keys))
                 if len(rec.keys) !=0:
                     match criteria:

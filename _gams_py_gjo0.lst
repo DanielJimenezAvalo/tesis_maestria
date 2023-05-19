@@ -1,4 +1,4 @@
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/17/23 13:50:06 Page 1
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/19/23 00:09:59 Page 1
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 C o m p i l a t i o n
 
@@ -76,74 +76,78 @@ GDXIN   C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_mae
 --- LOAD  c = 8:c
 --- LOAD  b = 9:b
 --- LOAD  A = 10:A
---- LOAD  k = 11:k
---- LOAD  iteracion = 12:iteracion
---- LOAD  x_kk = 13:x_kk
---- LOAD  Z_kk = 14:Z_kk
   67   
-  68  positive variables
-  69  x(s,t)     variables
-  70  ;
-  71   
-  72  variables
-  73  Z      FO
-  74  alpha(s)    recursiva
+GDXIN   C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\gtinvariable.gdx
+--- LOAD  k = 6:k
+--- LOAD  iteracion = 7:iteracion
+--- LOAD  x_kk = 8:x_kk
+--- LOAD  Z_kk = 10:Z_kk
+--- LOAD  pi_kk = 9:pi_kk
+--- LOAD  theta_kk = 11:theta_kk
+  72   
+  73  positive variables
+  74  x(s,t)     variables
   75  ;
   76   
-  77  equations
-  78  eq_z1            funcion objetivo master primera iteracion benders
-  79  eq_zk            funcion objetivo master j iteracion benders
-  80  eq_zk1            funcion objetivo master j iteracion benders
-  81  eq_r1(s,r)         ecuaciones
-  82  eq_rk(iter,s,r)         ecuaciones
-  83  eq_rkb(iter,s)        ecuaciones
-  84  eq_rkf(iter,s)        ecuaciones
-  85  ;
-  86   
-  87  eq_z1..  sum[(s1,t1)$[ord(s1)=1],c(s1,t1)*x(s1,t1)]   =e= Z  ;
-  88   
-  89  eq_zk1.. sum[(s1,t1)$[ord(s1)=k],c(s1,t1)*x(s1,t1)]   =e= Z  ;
-  90   
-  91  eq_zk..  sum[(s1,t1)$[ord(s1)=k],c(s1,t1)*x(s1,t1)] + sum[s1$[ord(s1)=k],alpha(s1)]  =e= Z  ;
-  92   
-  93  eq_r1(s2,r2)$[ord(s2)=k]..   sum[(s1,t1)$[MAPSP(s1,t1) and (ord(s1)=1)],A(s2,r2,s1,t1)*x(s1,t1)] =g= b(s2,r2);
-  94   
-  95  eq_rk(iter_1,s2,r2)${[ord(s2)=k] and
-  96                       [ord(iter_1) = iteracion   ]}..    sum[(s1,t1)$[MAPSP(s1,t1) and
-  97                                                                           (ord(s1)=k)      ],A(s2,r2,s1,t1)*x(s1,t1)]
-  98                                                             =g=
-  99                                                             b(s2,r2)
- 100                                                             -sum[(s1,t1)$[MAPSP(s1,t1) and
- 101                                                                           (ord(s1)=k-1)    ],A(s2,r2,s1,t1)*x_kk(iter_1,s1,t1)]
- 102                                                             ;
- 103   
- 104  eq_rkf(iter_1,s2)$[(ord(s2)=k) and
- 105                     (ord(iter_1)= iteracion-1 )]..    sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
- 106                                                       =g=
- 107                                                       sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
- 108                                                                      (ord(s1)=k+1)   and
- 109                                                                       MAPSP(s2,t2)   and
- 110                                                                      (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
- 111                                                       ;
- 112   
- 113  eq_rkb(iter_1,s2)$[(ord(s2)=k) and
- 114                     (ord(iter_1)= iteracion   )]..     sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
- 115                                                       =g=
- 116                                                       sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
- 117                                                                      (ord(s1)=k+1)   and
- 118                                                                       MAPSP(s2,t2)   and
- 119                                                                      (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
- 120                                                       ;
- 121   
- 122  model multibenders1  /eq_z1, eq_r1/ ;
- 123  model multibenders2a /eq_zk1, eq_rk/ ;
- 124  model multibenders2  /eq_zk, eq_rk/ ;
- 125  model multibenders3  /eq_zk, eq_r1, eq_rkf/ ;
- 126  model multibenders4a /eq_zk, eq_rk, eq_rkf/ ;
- 127  model multibenders4  /eq_zk, eq_rk, eq_rkb/ ;
- 128   
- 129   
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/17/23 13:50:06 Page 2
+  77  variables
+  78  Z      FO
+  79  alpha(s)    recursiva
+  80  ;
+  81   
+  82  equations
+  83  eq_z1            funcion objetivo master primera iteracion benders
+  84  eq_zk            funcion objetivo master j iteracion benders
+  85  eq_zk1            funcion objetivo master j iteracion benders
+  86  eq_r1(s,r)         ecuaciones
+  87  eq_rk(iter,s,r)         ecuaciones
+  88  eq_rkb(iter,s)        ecuaciones
+  89  eq_rkf(iter,s)        ecuaciones
+  90  ;
+  91   
+  92  eq_z1..  sum[(s1,t1)$[ord(s1)=1],c(s1,t1)*x(s1,t1)]   =e= Z  ;
+  93   
+  94  eq_zk1.. sum[(s1,t1)$[ord(s1)=k],c(s1,t1)*x(s1,t1)]   =e= Z  ;
+  95   
+  96  eq_zk..  sum[(s1,t1)$[ord(s1)=k],c(s1,t1)*x(s1,t1)] + sum[s1$[ord(s1)=k],alpha(s1)]  =e= Z  ;
+  97   
+  98  eq_r1(s2,r2)$[ord(s2)=k]..   sum[(s1,t1)$[MAPSP(s1,t1) and (ord(s1)=1)],A(s2,r2,s1,t1)*x(s1,t1)] =g= b(s2,r2);
+  99   
+ 100  eq_rk(iter_1,s2,r2)${[ord(s2)=k] and
+ 101                       [ord(iter_1) = iteracion   ]}..    sum[(s1,t1)$[MAPSP(s1,t1) and
+ 102                                                                           (ord(s1)=k)      ],A(s2,r2,s1,t1)*x(s1,t1)]
+ 103                                                             =g=
+ 104                                                             b(s2,r2)
+ 105                                                             -sum[(s1,t1)$[MAPSP(s1,t1) and
+ 106                                                                           (ord(s1)=k-1)    ],A(s2,r2,s1,t1)*x_kk(iter_1,s1,t1)]
+ 107                                                             ;
+ 108   
+ 109  eq_rkf(iter_1,s2)$[(ord(s2)=k) and
+ 110                     (ord(iter_1)= iteracion-1 )]..    sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
+ 111                                                       =g=
+ 112                                                       sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
+ 113                                                                      (ord(s1)=k+1)   and
+ 114                                                                       MAPSP(s2,t2)   and
+ 115                                                                      (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
+ 116                                                       ;
+ 117   
+ 118  eq_rkb(iter_1,s2)$[(ord(s2)=k) and
+ 119                     (ord(iter_1)= iteracion   )]..     sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
+ 120                                                       =g=
+ 121                                                       sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
+ 122                                                                      (ord(s1)=k+1)   and
+ 123                                                                       MAPSP(s2,t2)   and
+ 124                                                                      (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
+ 125                                                       ;
+ 126   
+ 127  model multibenders1  /eq_z1, eq_r1/ ;
+ 128  model multibenders2a /eq_zk1, eq_rk/ ;
+ 129  model multibenders2  /eq_zk, eq_rk/ ;
+ 130  model multibenders3  /eq_zk, eq_r1, eq_rkf/ ;
+ 131  model multibenders4a /eq_zk, eq_rk, eq_rkf/ ;
+ 132  model multibenders4  /eq_zk, eq_rk, eq_rkb/ ;
+ 133   
+ 134   
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/19/23 00:09:59 Page 2
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 Include File Summary
 
@@ -152,10 +156,11 @@ Include File Summary
 
      1        1 INPUT          0       0  C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\_gams_py_gjo0.gms
      2       64 GDXIN          1      64  C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\gtin.gdx
+     3       69 GDXIN          1      69  C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_maestria\tesis_maestria\gtinvariable.gdx
 
 
-COMPILATION TIME     =        0.015 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/17/23 13:50:06 Page 3
+COMPILATION TIME     =        0.016 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/19/23 00:09:59 Page 3
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 E x e c u t i o n
 
