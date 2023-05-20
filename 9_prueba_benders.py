@@ -867,6 +867,34 @@ if __name__ == "__main__":
 
                     else:
 
+
+                        '''
+                        eq_zk..  sum[(s1,t1)$[ord(s1)=k],c(s1,t1)*x(s1,t1)] + sum[s1$[ord(s1)=k],alpha(s1)]  =e= Z  ;
+
+                        eq_r1(s2,r2)$[ord(s2)=k]..   sum[(s1,t1)$[MAPSP(s1,t1) and (ord(s1)=1)],A(s2,r2,s1,t1)*x(s1,t1)] =g= b(s2,r2);
+
+                        eq_rk(iter_1,s2,r2)${[ord(s2)=k] and
+                                            [ord(iter_1) = iteracion   ]}..    sum[(s1,t1)$[MAPSP(s1,t1) and
+                                                                                                (ord(s1)=k)      ],A(s2,r2,s1,t1)*x(s1,t1)]
+                                                                                =g=
+                                                                                b(s2,r2)
+                                                                                -sum[(s1,t1)$[MAPSP(s1,t1) and
+                                                                                                (ord(s1)=k-1)    ],A(s2,r2,s1,t1)*x_kk(iter_1,s1,t1)]
+                                                                                ;
+
+                        eq_rkf(iter_1,s2)$[(ord(s2)=k) and
+                                        (ord(iter_1)= iteracion-1 )]..    sum[s1$[ord(s1)=k],alpha(s1)-theta_kk(iter_1,s1)]
+                                                                            =g=
+                                                                            sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
+                                                                                            (ord(s1)=k+1)   and
+                                                                                            MAPSP(s2,t2)   and
+                                                                                            (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
+                                                                            ;
+
+
+
+                        '''
+
                         if s_python==1:
                                 
                             model_container_variable=gt.Container()
@@ -1012,7 +1040,9 @@ if __name__ == "__main__":
                             iteracion.setRecords(iteracion_df_parameter)
 
                             #prueba insercion x_kk
-                            pd_xkk=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_xkk']
+                            pd_xkk_1=dataframe_resultados[iter_python-1][snt_python][s_python]['pd_xkk']
+                            pd_xkk_2=dataframe_resultados[iter_python][snt_python][s_python-1]['pd_xkk']
+                            pd_xkk=pd.concat([pd_xkk_1,pd_xkk_2])
                             if 'x_kk' in model_container_variable.listParameters():
                                 model_container_variable.removeSymbols('x_kk')
                             x_kk=gt.Parameter(model_container_variable,'x_kk',[iter,s,t])
@@ -1284,14 +1314,15 @@ if __name__ == "__main__":
                         #print(iteracion_df_parameter)
 
                         #prueba insercion x_kk
-                        #pd_xkk=dataframe_resultados[iter_python]['forward'][s_python]['pd_xkk']
-                        pd_xkk=dataframe_resultados.loc[[s_python-1,s_python]]
+                        pd_xkk_1=dataframe_resultados[iter_python]['forward'][s_python]['pd_xkk']
+                        pd_xkk_2=dataframe_resultados[iter_python]['forward'][s_python-1]['pd_xkk']
+                        pd_xkk=pd.concat([pd_xkk_1,pd_xkk_2])
                         #model_container_variable.removeSymbols('x_kk')
                         if 'x_kk' in model_container_variable.listParameters():
                             model_container_variable.removeSymbols('x_kk')
                         x_kk=gt.Parameter(model_container_variable,'x_kk',[iter,s,t])
                         x_kk.setRecords(pd_xkk)
-                        print(pd_xkk)
+                        #print(pd_xkk)
                         #print(x_kk.records)
 
                         #prueba insercion z_kk
