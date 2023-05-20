@@ -1,4 +1,4 @@
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/19/23 00:09:59 Page 1
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/20/23 03:07:30 Page 1
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 C o m p i l a t i o n
 
@@ -122,7 +122,7 @@ GDXIN   C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_mae
  107                                                             ;
  108   
  109  eq_rkf(iter_1,s2)$[(ord(s2)=k) and
- 110                     (ord(iter_1)= iteracion-1 )]..    sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
+ 110                     (ord(iter_1)= iteracion-1 )]..    sum[s1$[ord(s1)=k],alpha(s1)-theta_kk(iter_1,s1)]
  111                                                       =g=
  112                                                       sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
  113                                                                      (ord(s1)=k+1)   and
@@ -131,12 +131,12 @@ GDXIN   C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_mae
  116                                                       ;
  117   
  118  eq_rkb(iter_1,s2)$[(ord(s2)=k) and
- 119                     (ord(iter_1)= iteracion   )]..     sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
+ 119                     (ord(iter_1)= iteracion   )]..     sum[s1$[ord(s1)=k],alpha(s1)-theta_kk(iter_1,s1)]
  120                                                       =g=
  121                                                       sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
  122                                                                      (ord(s1)=k+1)   and
  123                                                                       MAPSP(s2,t2)   and
- 124                                                                      (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
+ 124                                                                      (ord(s2)=k)        ], pi_kk(iter_1,s1,r1)*A(s1,r1,s2 ,t2)*{x_kk(iter_1,s2,t2)-x(s2,t2)}]
  125                                                       ;
  126   
  127  model multibenders1  /eq_z1, eq_r1/ ;
@@ -147,7 +147,7 @@ GDXIN   C:\Users\djimeneza\docker\proyecto_postgresql\volume\workspace\tesis_mae
  132  model multibenders4  /eq_zk, eq_rk, eq_rkb/ ;
  133   
  134   
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/19/23 00:09:59 Page 2
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/20/23 03:07:30 Page 2
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 Include File Summary
 
@@ -160,7 +160,7 @@ Include File Summary
 
 
 COMPILATION TIME     =        0.016 SECONDS      3 MB  42.4.0 9dfaaa40 WEX-WEI
-GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/19/23 00:09:59 Page 3
+GAMS 42.4.0  9dfaaa40 Mar 16, 2023          WEX-WEI x86 64bit/MS Windows - 05/20/23 03:07:30 Page 3
 G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
 E x e c u t i o n
 

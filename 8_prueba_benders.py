@@ -412,7 +412,7 @@ eq_rk(iter_1,s2,r2)${[ord(s2)=k] and
                                                            ;
 
 eq_rkf(iter_1,s2)$[(ord(s2)=k) and
-                   (ord(iter_1)= iteracion-1 )]..    sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
+                   (ord(iter_1)= iteracion-1 )]..    sum[s1$[ord(s1)=k],alpha(s1)-theta_kk(iter_1,s1)]
                                                      =g=
                                                      sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
                                                                     (ord(s1)=k+1)   and
@@ -421,7 +421,7 @@ eq_rkf(iter_1,s2)$[(ord(s2)=k) and
                                                      ;
 
 eq_rkb(iter_1,s2)$[(ord(s2)=k) and
-                   (ord(iter_1)= iteracion   )]..     sum[s1$[ord(s1)=k],deltha_kk(iter_1,s1)*alpha(s1)-theta_kk(iter_1,s1)]
+                   (ord(iter_1)= iteracion   )]..     sum[s1$[ord(s1)=k],alpha(s1)-theta_kk(iter_1,s1)]
                                                      =g=
                                                      sum[(s1,r1,t2)$[MAPSROW(s1,r1) and
                                                                     (ord(s1)=k+1)   and
@@ -513,11 +513,11 @@ if __name__ == "__main__":
                             x_kk.setRecords(pd_xkk)
 
                             #prueba insercion pi_kk
-                            list_keys_t=[mapsp_set_array[i][1] for i in range(len(mapsp_set_array)) if mapsp_set_array[i][0]=='1']
+                            list_keys_r=[mapsrow_set_array[i][1] for i in range(len(mapsrow_set_array)) if mapsrow_set_array[i][0]=='1']
 
-                            array_pikk=list(zip([str(iter_python)]*3,[str(s_python)]*3,list_keys_t,['0']*3))
-                            pd_pikk=pd.DataFrame(array_pikk,columns=['iter','s','t','Value'])
-                            pi_kk=gt.Parameter(model_container_variable,'pi_kk',[iter,s,t])
+                            array_pikk=list(zip([str(iter_python)]*3,[str(s_python)]*3,list_keys_r,['0']*3))
+                            pd_pikk=pd.DataFrame(array_pikk,columns=['iter','s','r','Value'])
+                            pi_kk=gt.Parameter(model_container_variable,'pi_kk',[iter,s,r])
                             pi_kk.setRecords(pd_pikk)
 
                             #prueba insercion z_kk
@@ -563,31 +563,44 @@ if __name__ == "__main__":
                             dict_variable=job.print_get_varible('x')
                             #print(dict_variable)
                             dict_ecuacion=job.print_get_equation('eq_r1')
+                            #print(dict_ecuacion)
                             dict_fo=job.print_get_varible('Z')
                             #print(dict_fo)
                             job.print_get_equation('eq_z1') 
 
                             #crear el container                    
 
-                            #preparar la data para que pueda ser incluida en ek container
+                            #preparar la data para que pueda ser incluida en el container
+                            '''
                             s_mapsp=[]
                             t_mapsp=[]
+                            r_mapsrow=[]
 
                             for m in list(transfer_model.out_db["MAPSP"]):
                                 if m.key(0)==str(s_python):
                                     s_mapsp.append(str(m.key(0)))
                                     t_mapsp.append(str(m.key(1)))
-                            
+
+                            for m in list(transfer_model.out_db["MAPSrow"]):
+                                if m.key(0)==str(s_python):
+                                    s_mapsp.append(str(m.key(0)))
+                                    r_mapsrow.append(str(m.key(1)))
+                            '''
                             list_keys_0=[list(dict_variable['level'].keys())[i][0] for i in range(len(list(dict_variable['level'].keys())))]
                             list_keys_1=[list(dict_variable['level'].keys())[i][1] for i in range(len(list(dict_variable['level'].keys())))]
                             list_values=[list(dict_variable['level'].values())[i] for i in range(len(list(dict_variable['level'].keys())))]
                             list_iter=[str(iter_python)]*len(list_keys_0)
+
+                            list_keys_01=[list(dict_ecuacion['marginal'].keys())[i][0] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                            list_keys_11=[list(dict_ecuacion['marginal'].keys())[i][1] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                            list_values1=[list(dict_ecuacion['marginal'].values())[i] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                            list_iter1=[str(iter_python)]*len(list_keys_01)
                                             
                             array_xkk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
                             dataframe_resultados[iter_python][snt_python][s_python]['pd_xkk']=pd.DataFrame(array_xkk,columns=["iter","s","t","Value"])
 
-                            array_pikk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
-                            dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","t","Value"])
+                            array_pikk=list(zip(list_iter1,list_keys_01,list_keys_11,list_values1))
+                            dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","r","Value"])
 
                             array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']['1']))]
                             dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']=pd.DataFrame(array_zkk,columns=["iter","s","Value"])
@@ -608,8 +621,6 @@ if __name__ == "__main__":
                             s=gt.Set(model_container_variable,"s",records=model_container.getUELs('s'))
                             iter=gt.Set(model_container_variable,"iter",records=model_container.getUELs('iter'))
                             snt=gt.Set(model_container_variable,"snt",records=model_container.getUELs('snt'))
-                            MAPSP=gt.Set(model_container_variable,"MAPSP",records=model_container.getUELs('MAPSP'))
-                            MAPSrow=gt.Set(model_container_variable,"MAPSrow",records=model_container.getUELs('MAPSrow'))
 
                             k_df_parameter=pd.DataFrame([(str(s_python))],columns=['k'])
                             if 'k' in model_container_variable.listParameters():
@@ -637,7 +648,7 @@ if __name__ == "__main__":
                             #model_container_variable.removeSymbols('x_kk')
                             if 'pi_kk' in model_container_variable.listParameters():
                                 model_container_variable.removeSymbols('pi_kk')
-                            pi_kk=gt.Parameter(model_container_variable,'pi_kk',[iter,s,t])
+                            pi_kk=gt.Parameter(model_container_variable,'pi_kk',[iter,s,r])
                             pi_kk.setRecords(pd_pikk)
 
                             #prueba insercion z_kk
@@ -697,27 +708,23 @@ if __name__ == "__main__":
                             dict_fo=job.print_get_varible('Z')
                             job.print_get_equation('eq_zk1') 
 
-                            #crear el container                
-
-                            #preparar la data para que pueda ser incluida en ek container
-                            s_mapsp=[]
-                            t_mapsp=[]
-
-                            for m in list(transfer_model.out_db["MAPSP"]):
-                                if m.key(0)==str(s_python):
-                                    s_mapsp.append(str(m.key(0)))
-                                    t_mapsp.append(str(m.key(1)))
+                            #crear el container                             
 
                             list_keys_0=[list(dict_variable['level'].keys())[i][0] for i in range(len(list(dict_variable['level'].keys())))]
                             list_keys_1=[list(dict_variable['level'].keys())[i][1] for i in range(len(list(dict_variable['level'].keys())))]
                             list_values=[list(dict_variable['level'].values())[i] for i in range(len(list(dict_variable['level'].keys())))]
                             list_iter=[str(iter_python)]*len(list_keys_0)
+
+                            list_keys_01=[list(dict_ecuacion['marginal'].keys())[i][1] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                            list_keys_11=[list(dict_ecuacion['marginal'].keys())[i][2] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                            list_values1=[list(dict_ecuacion['marginal'].values())[i] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
+                            list_iter1=[str(iter_python)]*len(list_keys_01)
                                             
                             array_xkk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
                             dataframe_resultados[iter_python][snt_python][s_python]['pd_xkk']=pd.DataFrame(array_xkk,columns=["iter","s","t","Value"])
 
-                            array_pikk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
-                            dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","t","Value"])
+                            array_pikk=list(zip(list_iter1,list_keys_01,list_keys_11,list_values1))
+                            dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","r","Value"])
 
                             array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']['1']))]
                             dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']=pd.DataFrame(array_zkk,columns=["iter","s","Value"])
@@ -738,8 +745,6 @@ if __name__ == "__main__":
                             s=gt.Set(model_container_variable,"s",records=model_container.getUELs('s'))
                             iter=gt.Set(model_container_variable,"iter",records=model_container.getUELs('iter'))
                             snt=gt.Set(model_container_variable,"snt",records=model_container.getUELs('snt'))
-                            MAPSP=gt.Set(model_container_variable,"MAPSP",records=model_container.getUELs('MAPSP'))
-                            MAPSrow=gt.Set(model_container_variable,"MAPSrow",records=model_container.getUELs('MAPSrow'))
 
                             k_df_parameter=pd.DataFrame([(str(s_python))],columns=['k'])
                             #model_container_variable.removeSymbols('k')
@@ -768,7 +773,7 @@ if __name__ == "__main__":
                             #model_container_variable.removeSymbols('x_kk')
                             if 'pi_kk' in model_container_variable.listParameters():
                                 model_container_variable.removeSymbols('pi_kk')
-                            pi_kk=gt.Parameter(model_container_variable,'pi_kk',[iter,s,t])
+                            pi_kk=gt.Parameter(model_container_variable,'pi_kk',[iter,r,t])
                             pi_kk.setRecords(pd_pikk)
 
                             #prueba insercion z_kk
@@ -833,13 +838,6 @@ if __name__ == "__main__":
                             #crear el container                
 
                             #preparar la data para que pueda ser incluida en ek container
-                            s_mapsp=[]
-                            t_mapsp=[]
-
-                            for m in list(transfer_model.out_db["MAPSP"]):
-                                if m.key(0)==str(s_python):
-                                    s_mapsp.append(str(m.key(0)))
-                                    t_mapsp.append(str(m.key(1)))
 
                             list_keys_0=[list(dict_variable['level'].keys())[i][0] for i in range(len(list(dict_variable['level'].keys())))]
                             list_keys_1=[list(dict_variable['level'].keys())[i][1] for i in range(len(list(dict_variable['level'].keys())))]
@@ -855,7 +853,7 @@ if __name__ == "__main__":
                             dataframe_resultados[iter_python][snt_python][s_python]['pd_xkk']=pd.DataFrame(array_xkk,columns=["iter","s","t","Value"])
 
                             array_pikk=list(zip(list_iter1,list_keys_01,list_keys_11,list_values1))
-                            dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","t","Value"])
+                            dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","r","Value"])
 
                             array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']['1']))]
                             dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']=pd.DataFrame(array_zkk,columns=["iter","s","Value"])
@@ -900,27 +898,22 @@ if __name__ == "__main__":
 
                 for s_python in s_list[::-1]: 
 
-                    print(s_list[::-1])
-
-                    dataframe_resultados[iter_python][snt_python][s_python]={}
+                    dataframe_resultados[iter_python][snt_python][s_python-1]={}
                     
                     model_container_variable=gt.Container()
 
-                    if s_python==max(s_list):
-                        dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=dataframe_resultados[iter_python]['forward'][s_python]['pd_pikk']
-                        print(dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk'])
-                        print(dataframe_resultados[iter_python]['forward'][4]['pd_thetakk'])
-                        dataframe_resultados[iter_python][snt_python][s_python]['pd_thetakk']=dataframe_resultados[iter_python]['forward'][4]['pd_thetakk']
-
                     if (s_python>1 and s_python<max(s_list)):
+
+                        print("\n")
+                        print(f"*** iteracion: {iter_python} ***")
+                        print(f"****** sentido: {snt_python} ******")
+                        print(f"********* escenario: {s_python} *********")
 
                         t=gt.Set(model_container_variable,"t",records=model_container.getUELs('t'))
                         r=gt.Set(model_container_variable,"r",records=model_container.getUELs('r'))
                         s=gt.Set(model_container_variable,"s",records=model_container.getUELs('s'))
                         iter=gt.Set(model_container_variable,"iter",records=model_container.getUELs('iter'))
                         snt=gt.Set(model_container_variable,"snt",records=model_container.getUELs('snt'))
-                        MAPSP=gt.Set(model_container_variable,"MAPSP",records=model_container.getUELs('MAPSP'))
-                        MAPSrow=gt.Set(model_container_variable,"MAPSrow",records=model_container.getUELs('MAPSrow'))
 
                         k_df_parameter=pd.DataFrame([(str(s_python))],columns=['k'])
                         #model_container_variable.removeSymbols('k')
@@ -928,7 +921,7 @@ if __name__ == "__main__":
                                 model_container_variable.removeSymbols('k')
                         k=gt.Parameter(model_container_variable,'k')
                         k.setRecords(k_df_parameter)
-                        print(k_df_parameter)
+                        #print(k_df_parameter)
 
                         iteracion_df_parameter=pd.DataFrame([(str(iter_python))],columns=['iteracion'])
                         #model_container_variable.removeSymbols('iteracion')
@@ -936,24 +929,58 @@ if __name__ == "__main__":
                                 model_container_variable.removeSymbols('iteracion')
                         iteracion=gt.Parameter(model_container_variable,'iteracion')
                         iteracion.setRecords(iteracion_df_parameter)
-                        print(iteracion_df_parameter)
+                        #print(iteracion_df_parameter)
+
+                        #prueba insercion x_kk
+                        pd_xkk=dataframe_resultados[iter_python]['forward'][s_python]['pd_xkk']
+                        #model_container_variable.removeSymbols('x_kk')
+                        if 'x_kk' in model_container_variable.listParameters():
+                            model_container_variable.removeSymbols('x_kk')
+                        x_kk=gt.Parameter(model_container_variable,'x_kk',[iter,s,t])
+                        x_kk.setRecords(pd_xkk)
+                        #print(pd_xkk)
+                        #print(x_kk.records)
+
+                        #prueba insercion z_kk
+                        pd_zkk=dataframe_resultados[iter_python]['forward'][s_python]['pd_zkk']
+                        #model_container_variable.removeSymbols('Z_kk')
+                        if 'Z_kk' in model_container_variable.listParameters():
+                            model_container_variable.removeSymbols('Z_kk')
+                        Z_kk=gt.Parameter(model_container_variable,'Z_kk',[iter,s])
+                        Z_kk.setRecords(pd_zkk)
+
+                        #prueba insercion pi_kk
+                        if s_python==max(s_list)-1:
+                            pd_pikk=dataframe_resultados[iter_python]['forward'][5]['pd_pikk']
+                        else:
+                            pd_pikk=dataframe_resultados[iter_python][snt_python][s_python+1]['pd_pikk']
+
+                        if 'pi_kk' in model_container_variable.listParameters():
+                            model_container_variable.removeSymbols('pi_kk')
+                        #model_container.removeSymbols('pi_kk')
+                        #print(model_container_variable.countDuplicateRecords())
+                        pi_kk=gt.Parameter(model_container_variable,'pi_kk',[iter,s,r])
+                        pi_kk.setRecords(pd_pikk)
+                        #print(pd_pikk)
+                        #print(pi_kk.records)
+                        #print(pi_kk.findDomainViolations())
+
+                        print(dataframe_resultados)
 
                         #prueba theta_kk
-                        pd_thetakk=dataframe_resultados[iter_python][snt_python][s_python+1]['pd_thetakk']
+                        if s_python==max(s_list)-1:
+                            pd_thetakk=dataframe_resultados[iter_python]['forward'][4]['pd_thetakk']
+                        else:
+                            pd_thetakk=dataframe_resultados[iter_python][snt_python][s_python]['pd_thetakk']
                         #model_container_variable.removeSymbols('theta_kk')
                         if 'theta_kk' in model_container_variable.listParameters():
                                 model_container_variable.removeSymbols('theta_kk')
                         theta_kk=gt.Parameter(model_container_variable,"theta_kk",[iter,s])
                         theta_kk.setRecords(pd_thetakk)
+                        print(pd_thetakk)
+                        #print(theta_kk.records)
 
-                        #prueba insercion pi_kk
-                        pd_pikk=dataframe_resultados[iter_python][snt_python][s_python+1]['pd_pikk']
-                        if 'pi_kk' in model_container_variable.listParameters():
-                            model_container_variable.removeSymbols('pi_kk')
-                        #model_container.removeSymbols('pi_kk')
-                        #print(model_container_variable.countDuplicateRecords())
-                        pi_kk=gt.Parameter(model_container_variable,'pi_kk',[iter,s,t])
-                        pi_kk.setRecords(pd_pikk)
+                        
                         
                         #model_container.write("./gtin.gdx")
 
@@ -986,40 +1013,41 @@ if __name__ == "__main__":
                         #resultados de la simulacion en dataframes
                         job=pkg.export_df_api_python.create_inform_df(transfer_model)
                         dict_variable=job.print_get_varible('x')
+                        print(dict_variable)
                         dict_ecuacion=job.print_get_equation('eq_rk')
+                        print(dict_ecuacion)
                         dict_fo=job.print_get_varible('Z')
                         job.print_get_equation('eq_zk') 
 
                         #crear el container                
 
                         #preparar la data para que pueda ser incluida en ek container
-                        s_mapsp=[]
-                        t_mapsp=[]
 
-                        for m in list(transfer_model.out_db["MAPSP"]):
-                            if m.key(0)==str(s_python):
-                                s_mapsp.append(str(m.key(0)))
-                                t_mapsp.append(str(m.key(1)))
-
-                        #list_keys_0=[list(dict_variable['level'].keys())[i][0] for i in range(len(list(dict_variable['level'].keys())))]
-                        #list_keys_1=[list(dict_variable['level'].keys())[i][1] for i in range(len(list(dict_variable['level'].keys())))]
-                        #list_values=[list(dict_variable['level'].values())[i] for i in range(len(list(dict_variable['level'].keys())))]
-                        #list_iter=[str(iter_python)]*len(list_keys_0)
+                        list_keys_0=[list(dict_variable['level'].keys())[i][0] for i in range(len(list(dict_variable['level'].keys())))]
+                        #print(list_keys_0)
+                        list_keys_1=[list(dict_variable['level'].keys())[i][1] for i in range(len(list(dict_variable['level'].keys())))]
+                        #print(list_keys_1)
+                        list_values=[list(dict_variable['level'].values())[i] for i in range(len(list(dict_variable['level'].keys())))]
+                        list_iter=[str(iter_python)]*len(list_keys_0)
 
                         list_keys_01=[list(dict_ecuacion['marginal'].keys())[i][1] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
-                        print("prueba"+list_keys_01)
                         list_keys_11=[list(dict_ecuacion['marginal'].keys())[i][2] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
                         list_values1=[list(dict_ecuacion['marginal'].values())[i] for i in range(len(list(dict_ecuacion['marginal'].keys())))]
                         list_iter1=[str(iter_python)]*len(list_keys_01)
-                                        
-                        #array_xkk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
-                        #dataframe_resultados[iter_python][snt_python][s_python]['pd_xkk']=pd.DataFrame(array_xkk,columns=["iter","s","t","Value"])
+                                            
+                        array_xkk=list(zip(list_iter,list_keys_0,list_keys_1,list_values))
+                        #print(array_xkk)
+                        dataframe_resultados[iter_python][snt_python][s_python]['pd_xkk']=pd.DataFrame(array_xkk,columns=["iter","s","t","Value"])
 
                         array_pikk=list(zip(list_iter1,list_keys_01,list_keys_11,list_values1))
-                        dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","t","Value"])
+                        dataframe_resultados[iter_python][snt_python][s_python]['pd_pikk']=pd.DataFrame(array_pikk,columns=["iter","s","r","Value"])
 
                         array_zkk=[(str(iter_python),str(s_python),str(dict_fo['level']['1']))]
                         dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']=pd.DataFrame(array_zkk,columns=["iter","s","Value"])
-                        dataframe_resultados[iter_python][snt_python][s_python-1]['pd_thetakk']=dataframe_resultados[iter_python][snt_python][s_python]['pd_zkk']
+
+                        print(dataframe_resultados)
+
+                        array_thetakk=[(str(iter_python),str(s_python-1),str(dict_fo['level']['1']))]
+                        dataframe_resultados[iter_python][snt_python][s_python-1]['pd_thetakk']=pd.DataFrame(array_thetakk,columns=["iter","s","Value"])
 
                         print(dataframe_resultados)  
